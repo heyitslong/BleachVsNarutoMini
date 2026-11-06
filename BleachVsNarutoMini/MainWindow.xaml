@@ -1,0 +1,10 @@
+﻿<Window x:Class="BleachVsNarutoMini.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Bleach vs Naruto Mini" Height="600" Width="1000"
+        WindowStartupLocation="CenterScreen">
+    <Grid>
+        <!-- Canvas chính làm màng chơi -->
+        <Canvas x:Name="GameCanvas" Background="Black" Focusable="True"/>
+    </Grid>
+</Window>
