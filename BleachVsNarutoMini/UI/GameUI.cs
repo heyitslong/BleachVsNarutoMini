@@ -10,9 +10,9 @@ using System.Windows.Threading;
 
 namespace BleachVsNarutoMini.UI
 {
-    // =================================================================
-    //  1. DỮ LIỆU BẢN ĐỒ
-    // =================================================================
+   
+    //  DỮ LIỆU BẢN ĐỒ
+ 
     public class MapData
     {
         public string Id { get; set; }
@@ -45,7 +45,7 @@ namespace BleachVsNarutoMini.UI
             return id == "Arena2" ? CreateArena2() : CreateArena1();
         }
 
-        // ----- Đấu trường 1: Đấu trường Đá -----
+        // Đấu trường 1: Đấu trường Đá
         private static MapData CreateArena1()
         {
             var map = new MapData
@@ -69,7 +69,7 @@ namespace BleachVsNarutoMini.UI
             return map;
         }
 
-        // ----- Đấu trường 2: Đấu trường Băng -----
+        //  Đấu trường 2: Đấu trường Băng 
         private static MapData CreateArena2()
         {
             var map = new MapData
@@ -110,9 +110,9 @@ namespace BleachVsNarutoMini.UI
         }
     }
 
-    // =================================================================
-    //  2. VẼ BẢN ĐỒ LÊN MỘT CANVAS RIÊNG
-    // =================================================================
+    
+    //   VẼ BẢN ĐỒ LÊN MỘT CANVAS RIÊNG
+   
     public static class MapRenderer
     {
         public static void Draw(Canvas layer, MapData map)
@@ -166,9 +166,9 @@ namespace BleachVsNarutoMini.UI
         }
     }
 
-    // =================================================================
-    //  3. TIỆN ÍCH GIAO DIỆN (style nút bấm, nhãn, radio)
-    // =================================================================
+    
+    // TIỆN ÍCH GIAO DIỆN (style nút bấm, nhãn, radio)
+    
     internal static class UiKit
     {
         private const string ButtonStyleXaml = @"
@@ -255,9 +255,9 @@ namespace BleachVsNarutoMini.UI
         }
     }
 
-    // =================================================================
-    //  4. MÀN HÌNH MENU (chọn tướng + chọn đấu trường)
-    // =================================================================
+    
+    //   MÀN HÌNH MENU (chọn tướng + chọn đấu trường)
+    
     public class MainMenuView : UserControl
     {
         // (nhân vật, đấu trường)  ví dụ: ("Knight", "Arena2")
@@ -323,9 +323,9 @@ namespace BleachVsNarutoMini.UI
         }
     }
 
-    // =================================================================
-    //  5. MÀN HÌNH KẾT THÚC
-    // =================================================================
+    
+    //   MÀN HÌNH KẾT THÚC
+    
     public class GameOverView : UserControl
     {
         public event Action ReplayClicked;
@@ -377,9 +377,9 @@ namespace BleachVsNarutoMini.UI
         }
     }
 
-    // =================================================================
-    //  6. HUD: THANH MÁU
-    // =================================================================
+    
+    //   HUD: THANH MÁU
+    
     public class HealthBar : Grid
     {
         private readonly ProgressBar _bar;
@@ -512,15 +512,9 @@ namespace BleachVsNarutoMini.UI
         }
     }
 
-    // =================================================================
-    //  7. CỬA SỔ CHÍNH (ghép tất cả lại)
-    //
-    //  Các lớp chồng lên nhau:
-    //    MapLayer   -> bản đồ (của người 3)
-    //    GameCanvas -> nhân vật, đạn (N1, N2 vẽ vào đây)
-    //    Hud        -> thanh máu
-    //    ScreenHost -> Menu / GameOver
-    // =================================================================
+    
+    //   CỬA SỔ CHÍNH (ghép tất cả lại)
+    
     public class GameWindow : Window
     {
         // ---- N1, N2 dùng các thành viên public này ----
@@ -580,7 +574,7 @@ namespace BleachVsNarutoMini.UI
             ShowMenu();
         }
 
-        // ---------- Điều hướng ----------
+        //  Điều hướng 
         public void ShowMenu()
         {
             StopDemo();
@@ -617,7 +611,6 @@ namespace BleachVsNarutoMini.UI
             if (DemoMode) StartDemo();
         }
 
-        // N1 gọi hàm này khi có người hết máu
         public void ShowGameOver(string winnerName)
         {
             StopDemo();
@@ -628,14 +621,13 @@ namespace BleachVsNarutoMini.UI
             _screenHost.Content = over;
         }
 
-        // N1 gọi hàm này mỗi frame hoặc khi có sát thương
         public void UpdateHud(double p1Health, double p2Health, double maxHealth = 100)
         {
             _maxHealth = maxHealth;
             Hud.SetHealth(p1Health, p2Health, maxHealth);
         }
 
-        // ---------- Chế độ chạy thử (dữ liệu giả) ----------
+        //  Chế độ chạy thử (dữ liệu giả) 
         private void StartDemo()
         {
             double p1 = _maxHealth;
