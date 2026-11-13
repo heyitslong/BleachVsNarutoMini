@@ -1,0 +1,20 @@
+﻿<Window x:Class="Naruto.MainWindow" 
+        KeyUp="Window_KeyUp"
+    KeyDown="Window_KeyDown"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Naruto"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="450" Width="800">
+    <Canvas>
+        <Image x:Name="Player1" Width="150" Height="150" Canvas.Left="100" Canvas.Top="180" Source="pack://application:,,,/Assets/dung1.png" />
+        <Image x:Name="Player2" Width="100" Height="100" Canvas.Left="500" Canvas.Top="200" Source="pack://application:,,,/Assets/sskdung1.png" RenderTransformOrigin="0.5,0.5">
+            <Image.RenderTransform>
+                <ScaleTransform ScaleX="-1" />
+                <!-- Mặc định Sasuke xoay mặt sang trái nhìn Naruto -->
+            </Image.RenderTransform>
+        </Image>
+    </Canvas>
+</Window>
