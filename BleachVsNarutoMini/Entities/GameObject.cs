@@ -15,6 +15,7 @@
             Width = width;
             Height = height;
             Speed = speed;
+
         }
     }
 }

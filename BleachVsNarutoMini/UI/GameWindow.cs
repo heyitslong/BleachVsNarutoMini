@@ -31,7 +31,10 @@ namespace BleachVsNarutoMini.UI
         // === PHẦN CODE CỦA BẠN (Khai báo nhân vật và Timer riêng) ===
         private Entities.Naruto player1;
         private Entities.Sasuke player2;
-        private DispatcherTimer _gameLoopTimer;
+
+        private TimeSpan _lastRender;
+        private bool _running;
+        private int _shownHp1 = -1, _shownHp2 = -1;
         // ==============================================================
         private double p1Health = 100;
         private double p2Health = 100;
@@ -43,6 +46,7 @@ namespace BleachVsNarutoMini.UI
             SelectedMap = "Arena1";
 
             Title = "PVP Game";
+            InputMethod.SetIsInputMethodEnabled(this, false);
             SizeToContent = SizeToContent.WidthAndHeight;
             ResizeMode = ResizeMode.NoResize;
             WindowStartupLocation = WindowStartupLocation.CenterScreen;
@@ -69,52 +73,61 @@ namespace BleachVsNarutoMini.UI
             CurrentMap = MapLibrary.Get(SelectedMap);
             MapRenderer.Draw(MapLayer, CurrentMap);
 
-            // === KHỞI TẠO TIMER RIÊNG CHO NARUTO & SASUKE ===
-            // Tốc độ 50ms mượt mà như code cũ của bạn
-            _gameLoopTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) };
-            _gameLoopTimer.Tick += GameLoopTimer_Tick;
-            // ================================================
+           
 
             ShowMenu();
         }
 
         // === BỘ NÃO HOẠT ĐỘNG CỦA NHÂN VẬT ===
-        private void GameLoopTimer_Tick(object sender, EventArgs e)
+        private void StartLoop()
         {
-            if (player1 != null) player1.UpdateLogic();
-            if (player2 != null) player2.UpdateLogic();
-
-            // NẾU 2 NHÂN VẬT ĐANG TỒN TẠI VÀ CHẠM VÀO NHAU:
-            if (player1 != null && player2 != null && CheckCollision(player1.Sprite, player2.Sprite))
-            {
-                // Naruto đang tung chiêu
-                if (player1.IsAttacking)
-                {
-                    p2Health -= 2; // Trừ máu Sasuke
-                }
-
-                // Sasuke đang tung chiêu
-                if (player2.IsAttacking)
-                {
-                    p1Health -= 2; // Trừ máu Naruto
-                }
-
-                // Gửi dữ liệu lên thanh máu của bạn bè để nó vẽ lại UI
-                UpdateHud(p1Health, p2Health, _maxHealth);
-
-                // Phân định thắng thua
-                if (p1Health <= 0)
-                    ShowGameOver("PLAYER 2 (SASUKE)");
-                else if (p2Health <= 0)
-                    ShowGameOver("PLAYER 1 (NARUTO)");
-            }
+            _lastRender = TimeSpan.Zero;
+            if (_running) return;
+            CompositionTarget.Rendering += OnRendering;
+            _running = true;
         }
-        // =====================================
+
+        private void StopLoop()
+        {
+            if (!_running) return;
+            CompositionTarget.Rendering -= OnRendering;
+            _running = false;
+        }
+
+        private void OnRendering(object? sender, EventArgs e)
+        {
+            var now = ((RenderingEventArgs)e).RenderingTime;
+            if (_lastRender == TimeSpan.Zero) { _lastRender = now; return; }
+
+            double dt = (now - _lastRender).TotalSeconds;
+            if (dt <= 0) return;              // WPF đôi khi báo trùng một khung
+            _lastRender = now;
+            if (dt > 0.05) dt = 0.05;         // tránh nhân vật "nhảy vọt" khi bị khựng
+
+            if (player1 == null || player2 == null) return;
+
+            player1.UpdateLogic(dt);
+            player2.UpdateLogic(dt);
+            player1.TryHit(player2);
+            player2.TryHit(player1);
+
+            // Chỉ cập nhật thanh máu khi máu thật sự đổi
+            if (player1.Hp != _shownHp1 || player2.Hp != _shownHp2)
+            {
+                _shownHp1 = player1.Hp;
+                _shownHp2 = player2.Hp;
+                UpdateHud(player1.Hp, player2.Hp, _maxHealth);
+            }
+
+            if (player1.IsDead && player2.IsDead) ShowGameOver("HÒA");
+            else if (player1.IsDead) ShowGameOver("PLAYER 2 (SASUKE)");
+            else if (player2.IsDead) ShowGameOver("PLAYER 1 (NARUTO)");
+        }
 
         public void ShowMenu()
         {
             StopDemo();
-            _gameLoopTimer.Stop(); // Tắt nhân vật khi ra menu
+            StopLoop(); // Tắt nhân vật khi ra menu
             Hud.Visibility = Visibility.Collapsed;
             GameCanvas.Children.Clear();
 
@@ -147,11 +160,11 @@ namespace BleachVsNarutoMini.UI
             if (GameStarted != null) GameStarted(SelectedCharacter, SelectedMap);
 
             // === ĐƯA NHÂN VẬT LÊN VÕ ĐÀI ===
-            player1 = new Entities.Naruto();
-            player2 = new Entities.Sasuke();
+            player1 = new Entities.Naruto { StageWidth = MapLibrary.Width };
+            player2 = new Entities.Sasuke { StageWidth = MapLibrary.Width };
             GameCanvas.Children.Add(player1.Sprite);
             GameCanvas.Children.Add(player2.Sprite);
-            _gameLoopTimer.Start(); // Bắt đầu cho phép di chuyển
+            StartLoop(); // Bắt đầu cho phép di chuyển
             // ===============================
 
             // Code của bạn bè vẫn chạy bình thường không sứt mẻ 1 miếng
@@ -161,7 +174,7 @@ namespace BleachVsNarutoMini.UI
         public void ShowGameOver(string winnerName)
         {
             StopDemo();
-            _gameLoopTimer.Stop(); // Dừng nhân vật khi có người thắng
+            StopLoop(); // Dừng nhân vật khi có người thắng
 
             var over = new GameOverView(winnerName);
             over.ReplayClicked += StartGame;
@@ -204,20 +217,27 @@ namespace BleachVsNarutoMini.UI
         }
 
         // === BẮT SỰ KIỆN BÀN PHÍM TỪ BÊN NGOÀI ===
+        private static Key Normalize(KeyEventArgs e)
+        {
+            var key = e.Key == Key.ImeProcessed ? e.ImeProcessedKey : e.Key;
+
+            // Đổi phím số Numpad thành phím số hàng trên, để cả hai đều dùng được
+            if (key >= Key.NumPad0 && key <= Key.NumPad9)
+                key = key - Key.NumPad0 + Key.D0;
+            return key;
+        }
+
         protected override void OnKeyDown(KeyEventArgs e)
         {
             base.OnKeyDown(e);
-            if (player1 != null) player1.HandleKeyDown(e.Key);
-            if (player2 != null) player2.HandleKeyDown(e.Key);
+            BleachVsNarutoMini.Engine.InputManager.KeyDown(Normalize(e));
         }
 
         protected override void OnKeyUp(KeyEventArgs e)
         {
             base.OnKeyUp(e);
-            if (player1 != null) player1.HandleKeyUp(e.Key);
-            if (player2 != null) player2.HandleKeyUp(e.Key);
+            BleachVsNarutoMini.Engine.InputManager.KeyUp(Normalize(e));
         }
-
         private bool CheckCollision(Image img1, Image img2)
         {
             // Lấy tọa độ và kích thước tạo thành 1 khung chữ nhật cho Player 1
