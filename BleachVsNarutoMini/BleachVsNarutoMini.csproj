@@ -9,7 +9,72 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Assets\" />
+    <None Remove="Assets\danh1.png" />
+    <None Remove="Assets\danh2.png" />
+    <None Remove="Assets\danh3.png" />
+    <None Remove="Assets\dung1.png" />
+    <None Remove="Assets\dung2.png" />
+    <None Remove="Assets\dung3.png" />
+    <None Remove="Assets\nhay1.png" />
+    <None Remove="Assets\nhay2.png" />
+    <None Remove="Assets\nhay3.png" />
+    <None Remove="Assets\nhay4.png" />
+    <None Remove="Assets\sskchay1.png" />
+    <None Remove="Assets\sskchay2.png" />
+    <None Remove="Assets\sskchay3.png" />
+    <None Remove="Assets\sskchay4.png" />
+    <None Remove="Assets\sskchay5.png" />
+    <None Remove="Assets\sskchay6.png" />
+    <None Remove="Assets\sskdanh1.png" />
+    <None Remove="Assets\sskdanh2.png" />
+    <None Remove="Assets\sskdanh3.png" />
+    <None Remove="Assets\sskdanh4.png" />
+    <None Remove="Assets\sskdanh5.png" />
+    <None Remove="Assets\sskdanh6.png" />
+    <None Remove="Assets\sskdanh7.png" />
+    <None Remove="Assets\sskdung1.png" />
+    <None Remove="Assets\ssknhay1.png" />
+    <None Remove="Assets\ssknhay2.png" />
+    <None Remove="Assets\ssknhay3.png" />
+    <None Remove="Assets\ssknhay4.png" />
+    <None Remove="Assets\ssknhay5.png" />
+    <None Remove="Assets\ssknhay6.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\danh1.png" />
+    <Resource Include="Assets\danh2.png" />
+    <Resource Include="Assets\danh3.png" />
+    <Resource Include="Assets\dung1.png" />
+    <Resource Include="Assets\dung2.png" />
+    <Resource Include="Assets\dung3.png" />
+    <Resource Include="Assets\nhay1.png" />
+    <Resource Include="Assets\nhay2.png" />
+    <Resource Include="Assets\nhay3.png" />
+    <Resource Include="Assets\nhay4.png" />
+    <Resource Include="Assets\sskchay1.png" />
+    <Resource Include="Assets\sskchay2.png" />
+    <Resource Include="Assets\sskchay3.png" />
+    <Resource Include="Assets\sskchay4.png" />
+    <Resource Include="Assets\sskchay5.png" />
+    <Resource Include="Assets\sskchay6.png" />
+    <Resource Include="Assets\sskdanh1.png" />
+    <Resource Include="Assets\sskdanh2.png" />
+    <Resource Include="Assets\sskdanh3.png" />
+    <Resource Include="Assets\sskdanh4.png" />
+    <Resource Include="Assets\sskdanh5.png" />
+    <Resource Include="Assets\sskdanh6.png" />
+    <Resource Include="Assets\sskdanh7.png" />
+    <Resource Include="Assets\sskdung1.png" />
+    <Resource Include="Assets\ssknhay1.png" />
+    <Resource Include="Assets\ssknhay2.png" />
+    <Resource Include="Assets\ssknhay3.png" />
+    <Resource Include="Assets\ssknhay4.png" />
+    <Resource Include="Assets\ssknhay5.png" />
+    <Resource Include="Assets\ssknhay6.png" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Folder Include="UI\" />
   </ItemGroup>
 
