@@ -165,7 +165,7 @@ namespace Naruto
         {
             if (e.Key == Key.A && !narutoIsAttacking && !narutoIsJumping) narutoIsMoveLeft = true;
             if (e.Key == Key.D && !narutoIsAttacking && !narutoIsJumping) narutoIsMoveRight = true;
-            if (e.Key == Key.Space && !narutoIsAttacking && !narutoIsJumping) narutoIsJumping = true; // Phím Space nhảy
+            if (e.Key == Key.W && !narutoIsAttacking && !narutoIsJumping) narutoIsJumping = true; // Phím Space nhảy
             if (e.Key == Key.J && !narutoIsJumping)
             {
                 narutoIsAttacking = true;
@@ -174,8 +174,8 @@ namespace Naruto
 
             if (e.Key == Key.Left && !sskIsAttacking && !sskIsJumping) sskIsMoveLeft = true;
             if (e.Key == Key.Right && !sskIsAttacking && !sskIsJumping) sskIsMoveRight = true;
-            if (e.Key == Key.D5 && !sskIsAttacking && !sskIsJumping) sskIsJumping = true;
-            if (e.Key == Key.D4 && !sskIsJumping)
+            if (e.Key == Key.Up && !sskIsAttacking && !sskIsJumping) sskIsJumping = true;
+            if (e.Key == Key.NumPad1 && !sskIsJumping)
             {
                 sskIsAttacking = true;
                 sskComboCount++;
