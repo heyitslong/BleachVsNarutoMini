@@ -77,5 +77,8 @@
   <ItemGroup>
     <Folder Include="UI\" />
   </ItemGroup>
-
+	<ItemGroup>
+		<Resource Include="Assets\arena1_bg.png" />
+		<Resource Include="Assets\arena2_bg.png" />
+	</ItemGroup>
 </Project>

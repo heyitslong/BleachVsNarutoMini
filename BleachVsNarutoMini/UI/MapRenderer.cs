@@ -9,42 +9,56 @@ using System.Windows.Threading;
 
 namespace BleachVsNarutoMini.UI
 {
-    
+
     //  VẼ BẢN ĐỒ LÊN MỘT CANVAS RIÊNG
     public static class MapRenderer
     {
         public static void Draw(Canvas layer, MapData map)
         {
             layer.Children.Clear();
-            layer.Background = map.Background;
+            layer.Background = map.Background;   // ImageBrush 
 
-            var gridBrush = new SolidColorBrush(Color.FromArgb(0x14, 255, 255, 255));
-
-            // Lưới mờ trên nền cho dễ nhìn
-            for (double x = 64; x < MapLibrary.Width; x += 64)
-                layer.Children.Add(new Line
-                {
-                    X1 = x, X2 = x, Y1 = 0, Y2 = MapLibrary.Height,
-                    Stroke = gridBrush, StrokeThickness = 1
-                });
-            for (double y = 64; y < MapLibrary.Height; y += 64)
-                layer.Children.Add(new Line
-                {
-                    X1 = 0, X2 = MapLibrary.Width, Y1 = y, Y2 = y,
-                    Stroke = gridBrush, StrokeThickness = 1
-                });
-
-            // Vạch giữa sân
-            layer.Children.Add(new Line
+            // Chỉ vẽ lưới và vạch giữa khi nền KHÔNG phải là ảnh
+            if (!(map.Background is ImageBrush))
             {
-                X1 = MapLibrary.Width / 2, X2 = MapLibrary.Width / 2,
-                Y1 = 0, Y2 = MapLibrary.Height,
-                Stroke = new SolidColorBrush(Color.FromArgb(0x30, 255, 255, 255)),
-                StrokeThickness = 2,
-                StrokeDashArray = new DoubleCollection { 6, 6 }
-            });
+                var gridBrush = new SolidColorBrush(Color.FromArgb(0x14, 255, 255, 255));
 
-            // Hộp và tường
+                // Lưới mờ trên nền cho dễ nhìn
+                for (double x = 64; x < MapLibrary.Width; x += 64)
+                    layer.Children.Add(new Line
+                    {
+                        X1 = x,
+                        X2 = x,
+                        Y1 = 0,
+                        Y2 = MapLibrary.Height,
+                        Stroke = gridBrush,
+                        StrokeThickness = 1
+                    });
+                for (double y = 64; y < MapLibrary.Height; y += 64)
+                    layer.Children.Add(new Line
+                    {
+                        X1 = 0,
+                        X2 = MapLibrary.Width,
+                        Y1 = y,
+                        Y2 = y,
+                        Stroke = gridBrush,
+                        StrokeThickness = 1
+                    });
+
+                // Vạch giữa sân
+                layer.Children.Add(new Line
+                {
+                    X1 = MapLibrary.Width / 2,
+                    X2 = MapLibrary.Width / 2,
+                    Y1 = 0,
+                    Y2 = MapLibrary.Height,
+                    Stroke = new SolidColorBrush(Color.FromArgb(0x30, 255, 255, 255)),
+                    StrokeThickness = 2,
+                    StrokeDashArray = new DoubleCollection { 6, 6 }
+                });
+            }
+
+            // Hộp và tường 
             foreach (var r in map.Obstacles)
             {
                 var box = new Rectangle

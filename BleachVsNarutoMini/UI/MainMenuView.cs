@@ -42,8 +42,8 @@ namespace BleachVsNarutoMini.UI
 
             // Chọn tướng
             panel.Children.Add(UiKit.MakeLabel("Chọn tướng:"));
-            _rbKnight = UiKit.MakeRadio("Hiệp sĩ", "Char", lastCharacter != "Archer", new Thickness(0));
-            _rbArcher = UiKit.MakeRadio("Cung thủ", "Char", lastCharacter == "Archer", new Thickness(0, 5, 0, 20));
+            _rbKnight = UiKit.MakeRadio("Naruto", "Char", lastCharacter != "Archer", new Thickness(0));
+            _rbArcher = UiKit.MakeRadio("Sasuke", "Char", lastCharacter == "Knight", new Thickness(0, 5, 0, 20));
             panel.Children.Add(_rbKnight);
             panel.Children.Add(_rbArcher);
 

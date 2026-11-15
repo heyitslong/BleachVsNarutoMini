@@ -6,6 +6,7 @@ using System.Windows.Markup;
 using System.Windows.Media;
 using System.Windows.Shapes;
 using System.Windows.Threading;
+using System.Windows.Media.Imaging;
 
 namespace BleachVsNarutoMini.UI
 {
@@ -50,7 +51,8 @@ namespace BleachVsNarutoMini.UI
             {
                 Id = "Arena1",
                 Name = "Đấu trường Đá",
-                Background = Frozen(Color.FromRgb(0x2B, 0x2B, 0x3C)),
+                Background = LoadImageBrush("Assets/arena1_bg.png",
+                            Frozen(Color.FromRgb(0x2B, 0x2B, 0x3C))),
                 ObstacleFill = Frozen(Color.FromRgb(0x7A, 0x6A, 0x58)),
                 ObstacleBorder = Brushes.Black,
                 P1Spawn = new Point(80, 300),
@@ -74,7 +76,8 @@ namespace BleachVsNarutoMini.UI
             {
                 Id = "Arena2",
                 Name = "Đấu trường Băng",
-                Background = Frozen(Color.FromRgb(0x1B, 0x3A, 0x4B)),
+                Background = LoadImageBrush("Assets/arena2_bg.png",
+                            Frozen(Color.FromRgb(0x1B, 0x3A, 0x4B))),
                 ObstacleFill = Frozen(Color.FromRgb(0x8E, 0xCA, 0xE6)),
                 ObstacleBorder = Frozen(Color.FromRgb(0x21, 0x9E, 0xBC)),
                 P1Spawn = new Point(80, 300),
@@ -105,6 +108,26 @@ namespace BleachVsNarutoMini.UI
             var b = new SolidColorBrush(c);
             b.Freeze();
             return b;
+        }
+        // Nạp ảnh làm nền; nếu lỗi/không có ảnh thì dùng màu dự phòng
+        private static Brush LoadImageBrush(string path, Brush fallback)
+        {
+            try
+            {
+                var img = new BitmapImage(new Uri("pack://application:,,,/" + path, UriKind.Absolute));
+                img.Freeze();
+                var brush = new ImageBrush(img) { Stretch = Stretch.Fill };
+                brush.Freeze();
+                return brush;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Không nạp được ảnh: " + path + "\n\n" + ex.Message);
+                return fallback;
+            }
+            {
+                return fallback;
+            }
         }
     }
 }
