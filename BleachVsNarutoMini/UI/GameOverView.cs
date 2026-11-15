@@ -36,7 +36,7 @@ namespace BleachVsNarutoMini.UI
             panel.Children.Add(new TextBlock
             {
                 Text = winnerName + " THẮNG!",
-                FontSize = 28,
+                FontSize = 20,
                 Foreground = Brushes.Gold,
                 HorizontalAlignment = HorizontalAlignment.Center,
                 Margin = new Thickness(0, 10, 0, 30)
