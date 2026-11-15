@@ -18,10 +18,11 @@ namespace BleachVsNarutoMini.Entities
             Height = 110,
             BodyWidthRatio = 0.5,
             AttackReach = 25,
-            GroundBottom = 330,
+            GroundBottom = 620,
+            FootPadding = 21,
             StartFacingRight = false            // quay sang trái nhìn Naruto
         };
 
-        public Sasuke() : base(600, Config, Key.Left, Key.Right, Key.D2, Key.D1) { }
+        public Sasuke() : base(830, Config, Key.Left, Key.Right, Key.D2, Key.D1) { }
     }
 }

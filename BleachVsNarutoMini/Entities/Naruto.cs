@@ -18,10 +18,10 @@ namespace BleachVsNarutoMini.Entities
             Height = 170,
             BodyWidthRatio = 0.5,
             AttackReach = 25,
-            GroundBottom = 360,
+            GroundBottom = 620,
             StartFacingRight = true,
-            AttackFrameTime = 0.06
-
+            AttackFrameTime = 0.06,
+            FootPadding = 48
         };
 
         public Naruto() : base(100, Config, Key.A, Key.D, Key.K, Key.J) { }
