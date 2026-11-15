@@ -36,6 +36,7 @@ namespace BleachVsNarutoMini.Entities
         public double StageWidth { get; set; } = 1024;
         public double GroundY { get; set; } = 620;
         public IReadOnlyList<Rect> Platforms { get; set; } = Array.Empty<Rect>();
+        public event Action<Projectile>? OnSpawnProjectile;
 
         // Hitbox thân thể thực tế của nhân vật (bỏ qua phần viền ảnh rỗng xung quanh)
         private double BodyW => Width * _cfg.BodyWidthRatio;
@@ -168,6 +169,14 @@ namespace BleachVsNarutoMini.Entities
         }
 
         public void TakeDamage(int amount) => Hp = Math.Max(0, Hp - amount);
+        protected void SpawnProjectile(string imageFile, double width, double height, double speed, int damage)
+        {
+            double spawnX = FacingRight ? (BodyX + BodyW) : (BodyX - width);
+            double spawnY = BodyTop + (BodyH - height) / 2;
+
+            var proj = new Projectile(this, imageFile, spawnX, spawnY, width, height, speed, damage, FacingRight);
+            OnSpawnProjectile?.Invoke(proj);
+        }
 
         private bool IsStandingOnSurface()
         {

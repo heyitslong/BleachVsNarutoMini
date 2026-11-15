@@ -31,6 +31,7 @@ namespace BleachVsNarutoMini.UI
         // === PHẦN CODE CỦA BẠN (Khai báo nhân vật và Timer riêng) ===
         private Entities.Naruto player1;
         private Entities.Sasuke player2;
+        private readonly List<Entities.Projectile> _projectiles = new();
 
         private TimeSpan _lastRender;
         private bool _running;
@@ -110,6 +111,18 @@ namespace BleachVsNarutoMini.UI
             player2.UpdateLogic(dt);
             player1.TryHit(player2);
             player2.TryHit(player1);
+            for (int i = _projectiles.Count - 1; i >= 0; i--)
+            {
+                var proj = _projectiles[i];
+                var target = proj.Owner == player1 ? (Entities.Fighter)player2 : player1;
+                proj.Update(dt, target, CurrentMap.Obstacles, MapLibrary.Width);
+
+                if (!proj.IsActive)
+                {
+                    GameCanvas.Children.Remove(proj.Sprite);
+                    _projectiles.RemoveAt(i);
+                }
+            }
 
             // Chỉ cập nhật thanh máu khi máu thật sự đổi
             if (player1.Hp != _shownHp1 || player2.Hp != _shownHp2)
@@ -130,6 +143,7 @@ namespace BleachVsNarutoMini.UI
             StopLoop(); // Tắt nhân vật khi ra menu
             Hud.Visibility = Visibility.Collapsed;
             GameCanvas.Children.Clear();
+            _projectiles.Clear();
 
             var menu = new MainMenuView(SelectedCharacter, SelectedMap);
             menu.StartClicked += delegate (string character, string map)
@@ -146,6 +160,7 @@ namespace BleachVsNarutoMini.UI
             StopDemo();
             _screenHost.Content = null;
             GameCanvas.Children.Clear();
+            _projectiles.Clear();
 
             CurrentMap = MapLibrary.Get(SelectedMap);
             MapRenderer.Draw(MapLayer, CurrentMap);
@@ -172,11 +187,18 @@ namespace BleachVsNarutoMini.UI
             };
             GameCanvas.Children.Add(player1.Sprite);
             GameCanvas.Children.Add(player2.Sprite);
+            player1.OnSpawnProjectile += AddProjectile;
+            player2.OnSpawnProjectile += AddProjectile;
             StartLoop(); // Bắt đầu cho phép di chuyển
             // ===============================
 
             // Code của bạn bè vẫn chạy bình thường không sứt mẻ 1 miếng
             if (DemoMode) StartDemo();
+        }
+        private void AddProjectile(Entities.Projectile proj)
+        {
+            _projectiles.Add(proj);
+            GameCanvas.Children.Add(proj.Sprite);
         }
 
         public void ShowGameOver(string winnerName)
