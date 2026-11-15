@@ -160,8 +160,16 @@ namespace BleachVsNarutoMini.UI
             if (GameStarted != null) GameStarted(SelectedCharacter, SelectedMap);
 
             // === ĐƯA NHÂN VẬT LÊN VÕ ĐÀI ===
-            player1 = new Entities.Naruto { StageWidth = MapLibrary.Width };
-            player2 = new Entities.Sasuke { StageWidth = MapLibrary.Width };
+            player1 = new Entities.Naruto
+            {
+                StageWidth = MapLibrary.Width,
+                Platforms = CurrentMap.Obstacles
+            };
+            player2 = new Entities.Sasuke
+            {
+                StageWidth = MapLibrary.Width,
+                Platforms = CurrentMap.Obstacles
+            };
             GameCanvas.Children.Add(player1.Sprite);
             GameCanvas.Children.Add(player2.Sprite);
             StartLoop(); // Bắt đầu cho phép di chuyển

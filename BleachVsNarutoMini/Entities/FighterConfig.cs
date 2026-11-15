@@ -29,5 +29,6 @@ namespace BleachVsNarutoMini.Entities
         public double Height { get; init; } = 150;
         public double GroundBottom { get; init; } = 330; // vị trí chân đứng trên Canvas
         public bool StartFacingRight { get; init; } = true;
+        public double FootPadding { get; init; } = 0;
     }
 }
