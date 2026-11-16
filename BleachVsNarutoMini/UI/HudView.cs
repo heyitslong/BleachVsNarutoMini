@@ -9,7 +9,9 @@ using System.Windows.Threading;
 
 namespace BleachVsNarutoMini.UI
 {
-    //  HUD: THANH MÁU
+    //  HUD: THANH MÁU + THANH CHAKRA + ĐỒNG HỒ
+
+    // Thanh máu (có chữ "80 / 100", đổi màu theo %) 
     public class HealthBar : Grid
     {
         private readonly ProgressBar _bar;
@@ -65,21 +67,59 @@ namespace BleachVsNarutoMini.UI
         }
     }
 
+    // Thanh chakra: nhỏ, màu xanh dương, nằm dưới thanh máu 
+    public class ChakraBar : Grid
+    {
+        private readonly ProgressBar _bar;
+
+        public ChakraBar(bool rightToLeft)
+        {
+            Height = 10;
+            Margin = new Thickness(0, 3, 0, 0);
+
+            _bar = new ProgressBar
+            {
+                Minimum = 0,
+                Maximum = 100,
+                Value = 100,
+                Background = new SolidColorBrush(Color.FromRgb(0x22, 0x22, 0x33)),
+                Foreground = new SolidColorBrush(Color.FromRgb(0x29, 0xB6, 0xF6)),
+                BorderBrush = Brushes.Black,
+                BorderThickness = new Thickness(1),
+                FlowDirection = rightToLeft ? FlowDirection.RightToLeft : FlowDirection.LeftToRight
+            };
+
+            Children.Add(_bar);
+        }
+
+        public void SetValue(double value, double max)
+        {
+            if (max <= 0) max = 1;
+            value = Math.Max(0, Math.Min(value, max));
+            _bar.Maximum = max;
+            _bar.Value = value;
+        }
+    }
+
+    // HUD tổng: tên, máu, chakra của 2 người + đồng hồ ở giữa 
     public class HudView : UserControl
     {
         private readonly TextBlock _p1Name;
         private readonly TextBlock _p2Name;
         private readonly HealthBar _p1Bar;
         private readonly HealthBar _p2Bar;
+        private readonly ChakraBar _p1Chakra;
+        private readonly ChakraBar _p2Chakra;
+        private readonly TextBlock _timeText;
 
         public HudView()
         {
             var grid = new Grid { Margin = new Thickness(20, 15, 20, 0) };
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(80) });
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(100) });
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
 
-            // Người chơi 1 (bên trái)
+            // Người chơi 1 (bên trái) 
             var left = new StackPanel();
             _p1Name = new TextBlock
             {
@@ -89,23 +129,35 @@ namespace BleachVsNarutoMini.UI
                 Margin = new Thickness(0, 0, 0, 3)
             };
             _p1Bar = new HealthBar(false);
+            _p1Chakra = new ChakraBar(false);
             left.Children.Add(_p1Name);
             left.Children.Add(_p1Bar);
+            left.Children.Add(_p1Chakra);
             Grid.SetColumn(left, 0);
 
-            // VS
+            //  Giữa: đồng hồ + chữ VS 
+            var center = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
+            _timeText = new TextBlock
+            {
+                Text = "60",
+                Foreground = Brushes.White,
+                FontSize = 30,
+                FontWeight = FontWeights.Bold,
+                HorizontalAlignment = HorizontalAlignment.Center
+            };
             var vs = new TextBlock
             {
                 Text = "VS",
                 Foreground = Brushes.Gold,
-                FontSize = 24,
+                FontSize = 14,
                 FontWeight = FontWeights.Bold,
-                HorizontalAlignment = HorizontalAlignment.Center,
-                VerticalAlignment = VerticalAlignment.Center
+                HorizontalAlignment = HorizontalAlignment.Center
             };
-            Grid.SetColumn(vs, 1);
+            center.Children.Add(_timeText);
+            center.Children.Add(vs);
+            Grid.SetColumn(center, 1);
 
-            // Người chơi 2 (bên phải)
+            //  Người chơi 2 (bên phải)
             var right = new StackPanel();
             _p2Name = new TextBlock
             {
@@ -116,12 +168,14 @@ namespace BleachVsNarutoMini.UI
                 Margin = new Thickness(0, 0, 0, 3)
             };
             _p2Bar = new HealthBar(true);
+            _p2Chakra = new ChakraBar(true);
             right.Children.Add(_p2Name);
             right.Children.Add(_p2Bar);
+            right.Children.Add(_p2Chakra);
             Grid.SetColumn(right, 2);
 
             grid.Children.Add(left);
-            grid.Children.Add(vs);
+            grid.Children.Add(center);
             grid.Children.Add(right);
 
             VerticalAlignment = VerticalAlignment.Top;
@@ -139,6 +193,20 @@ namespace BleachVsNarutoMini.UI
         {
             _p1Bar.SetValue(p1, max);
             _p2Bar.SetValue(p2, max);
+        }
+
+        public void SetChakra(double p1, double p2, double max)
+        {
+            _p1Chakra.SetValue(p1, max);
+            _p2Chakra.SetValue(p2, max);
+        }
+
+        // Hiện số giây còn lại; từ 10 giây trở xuống thì chuyển sang màu đỏ
+        public void SetTime(int seconds)
+        {
+            if (seconds < 0) seconds = 0;
+            _timeText.Text = seconds.ToString();
+            _timeText.Foreground = seconds <= 10 ? Brushes.Red : Brushes.White;
         }
     }
 }
