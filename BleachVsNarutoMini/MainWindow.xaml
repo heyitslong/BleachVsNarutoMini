@@ -4,7 +4,12 @@
         Title="Bleach vs Naruto Mini" Height="600" Width="1000"
         WindowStartupLocation="CenterScreen">
     <Grid>
-        <!-- Canvas chính làm màng chơi -->
-        <Canvas x:Name="GameCanvas" Background="Black" Focusable="True"/>
+        <!-- Canvas chính làm màn chơi -->
+        <Canvas x:Name="GameCanvas" Focusable="True">
+            <Canvas.Background>
+                <!-- Kéo ảnh arena1_bg.png từ thư mục Images vào làm hình nền -->
+                <ImageBrush ImageSource="Assets/Images/arena1_bg.png" Stretch="Fill"/>
+            </Canvas.Background>
+        </Canvas>
     </Grid>
 </Window>

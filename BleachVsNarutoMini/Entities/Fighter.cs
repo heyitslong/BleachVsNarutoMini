@@ -8,8 +8,6 @@ using InputManager = BleachVsNarutoMini.Engine.InputManager;
 
 namespace BleachVsNarutoMini.Entities
 {
-    public enum FighterState { Idle, Run, Attack, Jump }
-
     public abstract class Fighter : GameObject
     {
         private const double Gravity = 1800;
@@ -18,13 +16,13 @@ namespace BleachVsNarutoMini.Entities
         private const double RunFrameTime = 0.10;
 
         private readonly FighterConfig _cfg;
-        private readonly Key _left, _right, _jump, _attack;
+        private readonly Key _left, _right, _jump, _attack, _block, _throw, _ult;
         private readonly ScaleTransform _flip = new(1, 1);
 
         private double _vy, _timer;
         private int _frame;
         private int _lastHitFrame = -1;
-        private bool _combo, _attackWasDown;
+        private bool _combo, _attackWasDown, _hasThrown;
         private string _currentFile = "";
 
         public Image Sprite { get; }
@@ -38,14 +36,12 @@ namespace BleachVsNarutoMini.Entities
         public IReadOnlyList<Rect> Platforms { get; set; } = Array.Empty<Rect>();
         public event Action<Projectile>? OnSpawnProjectile;
 
-        // Hitbox thân thể thực tế của nhân vật (bỏ qua phần viền ảnh rỗng xung quanh)
         private double BodyW => Width * _cfg.BodyWidthRatio;
         private double BodyOffsetX => (Width - BodyW) / 2;
         private double BodyX => X + BodyOffsetX;
-        private double BodyTop => Y + 18; // Bỏ phần khoảng trắng phía trên đầu trong khung ảnh
+        private double BodyTop => Y + 18;
         private double FeetY => Y + Height - _cfg.FootPadding;
         private double BodyH => Math.Max(20, FeetY - BodyTop);
-
         public Rect Bounds => new(BodyX, BodyTop, BodyW, BodyH);
 
         private Rect AttackBox => FacingRight
@@ -53,112 +49,73 @@ namespace BleachVsNarutoMini.Entities
             : new Rect(BodyX - _cfg.AttackReach, BodyTop, _cfg.AttackReach, BodyH);
 
         protected Fighter(double x, FighterConfig cfg,
-                          Key left, Key right, Key jump, Key attack)
+                          Key left, Key right, Key jump, Key attack, Key block, Key throwSkill, Key ult)
             : base(x, cfg.GroundBottom - cfg.Height + cfg.FootPadding, cfg.Width, cfg.Height, 260)
         {
             _cfg = cfg;
             _left = left; _right = right; _jump = jump; _attack = attack;
+            _block = block; _throw = throwSkill; _ult = ult;
+
             FacingRight = cfg.StartFacingRight;
             GroundY = cfg.GroundBottom;
 
-            Sprite = new Image
-            {
-                Width = Width,
-                Height = Height,
-                RenderTransform = _flip,
-                RenderTransformOrigin = new Point(0.5, 0.5)
-            };
+            Sprite = new Image { Width = Width, Height = Height, RenderTransform = _flip, RenderTransformOrigin = new Point(0.5, 0.5) };
             RenderOptions.SetBitmapScalingMode(Sprite, BitmapScalingMode.NearestNeighbor);
-            SetImage(_cfg.Idle);
-            Draw();
+            SetImage(_cfg.Idle); Draw();
         }
 
         public void UpdateLogic(double dt)
         {
-            if (IsDead) return;
+            // Trạng thái chết: Chỉ cho rớt xuống đất và play animation chết
+            if (State == FighterState.Dead) { UpdateDead(dt); Draw(); return; }
 
             bool attackDown = InputManager.IsKeyDown(_attack);
             bool attackPressed = attackDown && !_attackWasDown;
             _attackWasDown = attackDown;
 
-            int dir = (InputManager.IsKeyDown(_right) ? 1 : 0)
-                    - (InputManager.IsKeyDown(_left) ? 1 : 0);
+            int dir = (InputManager.IsKeyDown(_right) ? 1 : 0) - (InputManager.IsKeyDown(_left) ? 1 : 0);
 
+            // Bắt phím khi đang rảnh rỗi hoặc di chuyển
             if (State == FighterState.Idle || State == FighterState.Run)
             {
-                if (attackPressed) SetState(FighterState.Attack);
-                else if (InputManager.IsKeyDown(_jump))
-                {
-                    _vy = JumpPower;
-                    SetState(FighterState.Jump);
-                }
+                if (InputManager.IsKeyDown(_block)) SetState(FighterState.Block);
+                else if (InputManager.IsKeyDown(_ult)) SetState(FighterState.Ultimate);
+                else if (InputManager.IsKeyDown(_throw)) SetState(FighterState.Throw);
+                else if (attackPressed) SetState(FighterState.Attack);
+                else if (InputManager.IsKeyDown(_jump)) { _vy = JumpPower; SetState(FighterState.Jump); }
             }
-            else if (State == FighterState.Attack && attackPressed && _cfg.ComboFrames > 0)
-            {
-                _combo = true;
-            }
+            // Kích hoạt Combo nếu đang ở đòn thường
+            else if (State == FighterState.Attack && attackPressed) _combo = true;
 
-            // 1. DI CHUYỂN NGANG (TRỤC X) & CHẶN CẠNH TRÁI/PHẢI CỦA KHỐI BỤC
-            if (State != FighterState.Attack && dir != 0)
+            // Di chuyển (Cho phép chạy trên đất VÀ lướt trên không trung khi nhảy)
+            bool canMoveX = State == FighterState.Idle || State == FighterState.Run || State == FighterState.Jump;
+            if (canMoveX && dir != 0)
             {
-                double minX = 20 - BodyOffsetX;
-                double maxX = StageWidth - 20 - BodyW - BodyOffsetX;
-                X = Math.Clamp(X + dir * Speed * dt, minX, maxX);
+                X = Math.Clamp(X + dir * Speed * dt, 20 - BodyOffsetX, StageWidth - 20 - BodyW - BodyOffsetX);
                 FacingRight = dir > 0;
-                ResolveHorizontalCollisions(dir);
             }
 
-            // Bước hụt ra khỏi mép bục -> tự động rơi xuống
-            if (State != FighterState.Jump && !IsStandingOnSurface())
-            {
-                _vy = 0;
-                SetState(FighterState.Jump);
-            }
+            if (State != FighterState.Jump && !IsStandingOnSurface()) { _vy = 0; SetState(FighterState.Jump); }
 
-            // 2. CẬP NHẬT TRẠNG THÁI & DI CHUYỂN DỌC (TRỤC Y)
+            // Xử lý Frame Animation theo trạng thái
             switch (State)
             {
                 case FighterState.Idle:
                 case FighterState.Run: UpdateGround(dir, dt); break;
-                case FighterState.Attack: UpdateAttack(dt); break;
                 case FighterState.Jump: UpdateJump(dt); break;
+                case FighterState.Attack: UpdateAttack(dt); break;
+                case FighterState.Throw: UpdateThrow(dt); break;
+                case FighterState.Ultimate: UpdateUltimate(dt); break;
+                case FighterState.Block: UpdateBlock(); break;
+                case FighterState.Hurt: UpdateHurt(dt); break;
             }
             Draw();
-        }
-
-        private void ResolveHorizontalCollisions(int dir)
-        {
-            Rect myBox = Bounds;
-
-            foreach (var p in Platforms)
-            {
-                // Bỏ qua 4 tường viền bao quanh bản đồ (đã giới hạn bằng StageWidth/GroundY)
-                if (p.Top <= 0 || p.Top >= GroundY || p.Left <= 0 || p.Right >= StageWidth) continue;
-
-                // Kiểm tra giao nhau theo chiều dọc (thân nhân vật đang nằm ngang hàng với khối bục)
-                bool overlapY = myBox.Bottom > p.Top + 2 && myBox.Top < p.Bottom - 2;
-                if (!overlapY) continue;
-
-                if (dir > 0 && myBox.Right > p.Left && myBox.Left < p.Left)
-                {
-                    // Đang đi sang phải -> đụng cạnh trái của khối -> ép sát mép trái
-                    X = p.Left - BodyW - BodyOffsetX;
-                    myBox = Bounds;
-                }
-                else if (dir < 0 && myBox.Left < p.Right && myBox.Right > p.Right)
-                {
-                    // Đang đi sang trái -> đụng cạnh phải của khối -> ép sát mép phải
-                    X = p.Right - BodyOffsetX;
-                    myBox = Bounds;
-                }
-            }
         }
 
         public void TryHit(Fighter target)
         {
             if (State != FighterState.Attack || target.IsDead) return;
-
-            bool hitFrame = _frame == 1 || (_combo && _frame == 4);
+            bool hitFrame = _frame == 1 || (_combo && _frame >= 5); // Tùy chỉnh nhịp gây dame
             if (!hitFrame || _lastHitFrame == _frame) return;
 
             if (AttackBox.IntersectsWith(target.Bounds))
@@ -168,30 +125,15 @@ namespace BleachVsNarutoMini.Entities
             }
         }
 
-        public void TakeDamage(int amount) => Hp = Math.Max(0, Hp - amount);
-        protected void SpawnProjectile(string imageFile, double width, double height, double speed, int damage)
+        public void TakeDamage(int amount)
         {
-            double spawnX = FacingRight ? (BodyX + BodyW) : (BodyX - width);
-            double spawnY = BodyTop + (BodyH - height) / 2;
-
-            var proj = new Projectile(this, imageFile, spawnX, spawnY, width, height, speed, damage, FacingRight);
-            OnSpawnProjectile?.Invoke(proj);
+            if (State == FighterState.Block || IsDead) return; // Nếu đang đỡ thì không mất máu
+            Hp = Math.Max(0, Hp - amount);
+            if (Hp == 0) SetState(FighterState.Dead);
+            else SetState(FighterState.Hurt);
         }
 
-        private bool IsStandingOnSurface()
-        {
-            if (Math.Abs(FeetY - GroundY) <= 2) return true;
-
-            foreach (var p in Platforms)
-            {
-                if (p.Top <= 0 || p.Top >= GroundY || p.Left <= 0 || p.Right >= StageWidth) continue;
-
-                bool overlapX = (BodyX + BodyW) > p.Left + 2 && BodyX < p.Right - 2;
-                bool onTop = Math.Abs(FeetY - p.Top) <= 3;
-                if (overlapX && onTop) return true;
-            }
-            return false;
-        }
+        private bool IsStandingOnSurface() => Math.Abs(FeetY - GroundY) <= 2;
 
         private void UpdateGround(int dir, double dt)
         {
@@ -206,99 +148,81 @@ namespace BleachVsNarutoMini.Entities
             else SetImage(_cfg.Idle);
         }
 
+        private void UpdateJump(double dt)
+        {
+            _vy += Gravity * dt; Y += _vy * dt;
+            if (FeetY >= GroundY) { Y = GroundY - Height + _cfg.FootPadding; _vy = 0; SetState(FighterState.Idle); return; }
+
+            double t = Math.Clamp((_vy - JumpPower) / (-2 * JumpPower), 0, 0.999);
+            SetImage($"{_cfg.JumpPrefix}{(int)(t * _cfg.JumpFrames) + 1}.png");
+        }
+
         private void UpdateAttack(double dt)
         {
-            int total = _combo ? _cfg.ComboFrames : _cfg.AttackFrames;
+            int total = _combo ? _cfg.AttackFrames : _cfg.ComboSplitFrame; // Đánh tới 4, nếu có combo thì tới 12
             SetImage($"{_cfg.AttackPrefix}{_frame + 1}.png");
             if (Advance(total, _cfg.AttackFrameTime, false, dt)) SetState(FighterState.Idle);
         }
 
-        private void UpdateJump(double dt)
+        private void UpdateThrow(double dt)
         {
-            double prevFeetY = FeetY;
-            double prevTopY = BodyTop;
+            SetImage($"{_cfg.ThrowPrefix}{_frame + 1}.png");
 
-            _vy += Gravity * dt;
-            Y += _vy * dt;
-
-            double currFeetY = FeetY;
-            double currTopY = BodyTop;
-
-            foreach (var p in Platforms)
+            // Nếu đã tới frame ném (Naruto là 4, Sasuke là 2) và CHƯA NÉM
+            if (_frame >= _cfg.ThrowFrames - 1 && !_hasThrown)
             {
-                if (p.Top <= 0 || p.Top >= GroundY || p.Left <= 0 || p.Right >= StageWidth) continue;
+                _hasThrown = true; // Bật cờ lên để đánh dấu là đã ném rồi
 
-                bool overlapX = (BodyX + BodyW) > p.Left + 2 && BodyX < p.Right - 2;
-                if (!overlapX) continue;
+                double spawnX = FacingRight ? (BodyX + BodyW) : (BodyX - 30);
 
-                if (_vy >= 0)
-                {
-                    // Đang rơi xuống -> đáp lên mặt trên khối (p.Top)
-                    if (prevFeetY <= p.Top + 6 && currFeetY >= p.Top)
-                    {
-                        Y = p.Top - Height + _cfg.FootPadding;
-                        _vy = 0;
-                        SetState(FighterState.Idle);
-                        SetImage(_cfg.Idle);
-                        return;
-                    }
-                }
-                else
-                {
-                    // Đang nhảy lên -> cụng đầu vào mặt đáy khối (p.Bottom) -> dội xuống
-                    if (prevTopY >= p.Bottom - 6 && currTopY <= p.Bottom)
-                    {
-                        Y = p.Bottom - 18;
-                        _vy = 0;
-                        break;
-                    }
-                }
+                // Truyền đúng "sskanhphitieu". Thằng Projectile.cs sẽ tự động lấy sskanhphitieu + 1 đến 5
+                var proj = new Projectile(this, "sskanhphitieu", spawnX, BodyTop + 20, 30, 30, 600, 10, FacingRight);
+                OnSpawnProjectile?.Invoke(proj);
             }
 
-            if (currFeetY >= GroundY)
-            {
-                Y = GroundY - Height + _cfg.FootPadding;
-                _vy = 0;
-                SetState(FighterState.Idle);
-                SetImage(_cfg.Idle);
-                return;
-            }
-
-            double t = Math.Clamp((_vy - JumpPower) / (-2 * JumpPower), 0, 0.999);
-            int f = (int)(t * _cfg.JumpFrames) + 1;
-            SetImage($"{_cfg.JumpPrefix}{f}.png");
+            if (Advance(_cfg.ThrowFrames, 0.08, false, dt)) SetState(FighterState.Idle);
         }
 
-        private bool Advance(int count, double frameTime, bool loop, double dt)
+        private void UpdateUltimate(double dt)
+        {
+            SetImage($"{_cfg.UltimatePrefix}{_frame + 1}.png");
+            if (Advance(_cfg.UltimateFrames, 0.08, false, dt)) SetState(FighterState.Idle);
+        }
+
+        private void UpdateBlock()
+        {
+            SetImage(_cfg.BlockImage);
+            if (!InputManager.IsKeyDown(_block)) SetState(FighterState.Idle); // Nhả phím -> Trở về đứng yên
+        }
+
+        private void UpdateHurt(double dt)
+        {
+            SetImage($"{_cfg.HurtPrefix}1.png"); // Bị thương khi còn HP chỉ hiện 1 frame
+            if (Advance(1, 0.3, false, dt)) SetState(FighterState.Idle); // Giật 0.3 giây rồi hồi phục
+        }
+
+        private void UpdateDead(double dt)
+        {
+            if (FeetY < GroundY) { _vy += Gravity * dt; Y += _vy * dt; } // Rớt xuống đất nếu đang nhảy
+            else Y = GroundY - Height + _cfg.FootPadding;
+
+            SetImage($"{_cfg.HurtPrefix}{_frame + 1}.png");
+            Advance(_cfg.DeadFrames, 0.15, false, dt); // Lăn ra chết từ 1 đến 6 rồi dừng luôn
+        }
+
+        private bool Advance(int count, double time, bool loop, double dt)
         {
             _timer += dt;
-            while (_timer >= frameTime)
-            {
-                _timer -= frameTime;
-                _frame++;
-                if (loop) _frame %= count;
-                else if (_frame >= count) { _frame = count - 1; return true; }
-            }
+            while (_timer >= time) { _timer -= time; _frame++; if (loop) _frame %= count; else if (_frame >= count) { _frame = count - 1; return true; } }
             return false;
         }
 
         private void SetState(FighterState s)
         {
             State = s; _frame = 0; _timer = 0; _lastHitFrame = -1; _combo = false;
+            _hasThrown = false; // Thêm dòng này vào đây
         }
-
-        private void SetImage(string file)
-        {
-            if (file == _currentFile) return;
-            _currentFile = file;
-            Sprite.Source = ImageCache.Get(file);
-        }
-
-        private void Draw()
-        {
-            Canvas.SetLeft(Sprite, X);
-            Canvas.SetTop(Sprite, Y);
-            _flip.ScaleX = FacingRight ? 1 : -1;
-        }
+        private void SetImage(string f) { if (f == _currentFile) return; _currentFile = f; Sprite.Source = ImageCache.Get(f); }
+        private void Draw() { Canvas.SetLeft(Sprite, X); Canvas.SetTop(Sprite, Y); _flip.ScaleX = FacingRight ? 1 : -1; }
     }
 }

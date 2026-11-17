@@ -14,7 +14,7 @@ namespace BleachVsNarutoMini.Entities
             {
                 img = new BitmapImage();
                 img.BeginInit();
-                img.UriSource = new Uri($"pack://application:,,,/Assets/{file}");
+                img.UriSource = new Uri($"pack://application:,,,/Assets/Images/{file}");
                 img.CacheOption = BitmapCacheOption.OnLoad;
                 img.EndInit();
                 img.Freeze();
