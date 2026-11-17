@@ -11,16 +11,24 @@ using System.Windows.Threading;
 namespace BleachVsNarutoMini.UI
 {
     //  CỬA SỔ CHÍNH (ghép tất cả lại)
+    //  Chú thích: [MỚI] = phần thêm vào, [SỬA] = phần sửa nhẹ so với bản cũ
     public class GameWindow : Window
     {
         public Canvas MapLayer { get; private set; }
         public Canvas GameCanvas { get; private set; }
         public HudView Hud { get; private set; }
         public MapData CurrentMap { get; private set; }
-        public string SelectedCharacter { get; private set; }
+
+        // [SỬA] Trước đây là SelectedCharacter, giờ mỗi người chơi chọn nhân vật riêng
+        public string SelectedP1 { get; private set; }
+        public string SelectedP2 { get; private set; }
         public string SelectedMap { get; private set; }
 
-        public event Action<string, string> GameStarted;
+        // [MỚI] Thời gian một trận (giây)
+        public int MatchSeconds { get; set; }
+
+        // [SỬA] Thêm tham số nhân vật của P2: (nhân vật P1, nhân vật P2, đấu trường)
+        public event Action<string, string, string> GameStarted;
 
         public bool DemoMode { get; set; }
 
@@ -28,22 +36,27 @@ namespace BleachVsNarutoMini.UI
         private DispatcherTimer _demoTimer;
         private double _maxHealth = 100;
 
-        // === PHẦN CODE CỦA BẠN (Khai báo nhân vật và Timer riêng) ===
-        private Entities.Naruto player1;
-        private Entities.Sasuke player2;
+        // [SỬA] Đổi kiểu sang Fighter để P1/P2 có thể là Naruto hoặc Sasuke tùy lựa chọn
+        private Entities.Fighter player1;
+        private Entities.Fighter player2;
         private readonly List<Entities.Projectile> _projectiles = new();
 
         private TimeSpan _lastRender;
         private bool _running;
         private int _shownHp1 = -1, _shownHp2 = -1;
-        // ==============================================================
         private double p1Health = 100;
         private double p2Health = 100;
+
+        // [MỚI] Đồng hồ đếm ngược
+        private double _timeLeft;
+        private int _shownTime = -1;
 
         public GameWindow()
         {
             DemoMode = false;
-            SelectedCharacter = "Knight";
+            MatchSeconds = 60;              // [MỚI]
+            SelectedP1 = "Naruto";          // [SỬA]
+            SelectedP2 = "Sasuke";          // [SỬA]
             SelectedMap = "Arena1";
 
             Title = "PVP Game";
@@ -74,12 +87,12 @@ namespace BleachVsNarutoMini.UI
             CurrentMap = MapLibrary.Get(SelectedMap);
             MapRenderer.Draw(MapLayer, CurrentMap);
 
-           
+
 
             ShowMenu();
         }
 
-        // === BỘ NÃO HOẠT ĐỘNG CỦA NHÂN VẬT ===
+        // HOẠT ĐỘNG CỦA NHÂN VẬT
         private void StartLoop()
         {
             _lastRender = TimeSpan.Zero;
@@ -132,9 +145,29 @@ namespace BleachVsNarutoMini.UI
                 UpdateHud(player1.Hp, player2.Hp, _maxHealth);
             }
 
-            if (player1.IsDead && player2.IsDead) ShowGameOver("HÒA");
-            else if (player1.IsDead) ShowGameOver("PLAYER 2 (SASUKE)");
-            else if (player2.IsDead) ShowGameOver("PLAYER 1 (NARUTO)");
+            // [MỚI] Thanh chakra. TODO (khi N2 thêm Chakra vào Fighter): bỏ comment dòng dưới
+            // UpdateChakra(player1.Chakra, player2.Chakra, player1.MaxChakra);
+
+            // [MỚI] Đồng hồ đếm ngược (tính theo dt nên dừng game là đồng hồ dừng theo)
+            _timeLeft -= dt;
+            int secs = (int)Math.Ceiling(Math.Max(0, _timeLeft));
+            if (secs != _shownTime)
+            {
+                _shownTime = secs;
+                Hud.SetTime(secs);
+            }
+
+            // [SỬA] Tên người thắng lấy theo nhân vật đã chọn; truyền null nghĩa là HÒA
+            if (player1.IsDead && player2.IsDead) ShowGameOver(null);
+            else if (player1.IsDead) ShowGameOver(PlayerLabel(2, SelectedP2));
+            else if (player2.IsDead) ShowGameOver(PlayerLabel(1, SelectedP1));
+            // [MỚI] Hết giờ: ai còn nhiều máu hơn thì thắng, bằng nhau thì hòa
+            else if (_timeLeft <= 0)
+            {
+                if (player1.Hp > player2.Hp) ShowGameOver(PlayerLabel(1, SelectedP1));
+                else if (player2.Hp > player1.Hp) ShowGameOver(PlayerLabel(2, SelectedP2));
+                else ShowGameOver(null);
+            }
         }
 
         public void ShowMenu()
@@ -145,10 +178,12 @@ namespace BleachVsNarutoMini.UI
             GameCanvas.Children.Clear();
             _projectiles.Clear();
 
-            var menu = new MainMenuView(SelectedCharacter, SelectedMap);
-            menu.StartClicked += delegate (string character, string map)
+            // [SỬA] Menu giờ có 2 cột chọn nhân vật cho P1 và P2
+            var menu = new MainMenuView(SelectedP1, SelectedP2, SelectedMap);
+            menu.StartClicked += delegate (string p1, string p2, string map)
             {
-                SelectedCharacter = character;
+                SelectedP1 = p1;
+                SelectedP2 = p2;
                 SelectedMap = map;
                 StartGame();
             };
@@ -169,38 +204,72 @@ namespace BleachVsNarutoMini.UI
             p2Health = _maxHealth;
 
             Hud.Visibility = Visibility.Visible;
-            Hud.SetNames("PLAYER 1", "PLAYER 2");
+            Hud.SetNames(PlayerName(1, SelectedP1), PlayerName(2, SelectedP2));   // [SỬA] hiện tên nhân vật
             UpdateHud(p1Health, p2Health, _maxHealth);
+            UpdateChakra(100, 100, 100);                                          // [MỚI]
 
-            if (GameStarted != null) GameStarted(SelectedCharacter, SelectedMap);
+            // [MỚI] Đặt lại đồng hồ và HUD cho trận mới
+            _shownHp1 = -1;
+            _shownHp2 = -1;
+            _timeLeft = MatchSeconds;
+            _shownTime = MatchSeconds;
+            Hud.SetTime(MatchSeconds);
+
+            if (GameStarted != null) GameStarted(SelectedP1, SelectedP2, SelectedMap);   // [SỬA]
 
             // === ĐƯA NHÂN VẬT LÊN VÕ ĐÀI ===
-            player1 = new Entities.Naruto
-            {
-                StageWidth = MapLibrary.Width,
-                Platforms = CurrentMap.Obstacles
-            };
-            player2 = new Entities.Sasuke
-            {
-                StageWidth = MapLibrary.Width,
-                Platforms = CurrentMap.Obstacles
-            };
+            // [SỬA] Tạo nhân vật theo lựa chọn (xem hàm CreateFighter bên dưới)
+            player1 = CreateFighter(SelectedP1);
+            player2 = CreateFighter(SelectedP2);
             GameCanvas.Children.Add(player1.Sprite);
             GameCanvas.Children.Add(player2.Sprite);
-            player1.OnSpawnProjectile += AddProjectile;
-            player2.OnSpawnProjectile += AddProjectile;
             StartLoop(); // Bắt đầu cho phép di chuyển
-            // ===============================
-
-            // Code của bạn bè vẫn chạy bình thường không sứt mẻ 1 miếng
             if (DemoMode) StartDemo();
         }
+
+        // Tạo nhân vật theo id chọn ở menu. Việc gắn OnSpawnProjectile đặt luôn ở đây.
+        // Muốn thêm nhân vật mới: thêm một nhánh ở đây và một dòng trong MainMenuView.Characters.
+        private Entities.Fighter CreateFighter(string id)
+        {
+            if (id == "Sasuke")
+            {
+                var s = new Entities.Sasuke
+                {
+                    StageWidth = MapLibrary.Width,
+                    Platforms = CurrentMap.Obstacles
+                };
+                s.OnSpawnProjectile += AddProjectile;
+                return s;
+            }
+
+            var n = new Entities.Naruto
+            {
+                StageWidth = MapLibrary.Width,
+                Platforms = CurrentMap.Obstacles
+            };
+            n.OnSpawnProjectile += AddProjectile;
+            return n;
+        }
+
+        // "PLAYER 1 - Naruto"
+        private static string PlayerName(int index, string characterId)
+        {
+            return "PLAYER " + index + " - " + MainMenuView.DisplayName(characterId);
+        }
+
+        // "PLAYER 1 (NARUTO)" 
+        private static string PlayerLabel(int index, string characterId)
+        {
+            return "PLAYER " + index + " (" + MainMenuView.DisplayName(characterId).ToUpper() + ")";
+        }
+
         private void AddProjectile(Entities.Projectile proj)
         {
             _projectiles.Add(proj);
             GameCanvas.Children.Add(proj.Sprite);
         }
 
+        // [SỬA] winnerName = null nghĩa là HÒA
         public void ShowGameOver(string winnerName)
         {
             StopDemo();
@@ -218,7 +287,11 @@ namespace BleachVsNarutoMini.UI
             Hud.SetHealth(p1Health, p2Health, maxHealth);
         }
 
-        // CHẾ ĐỘ CỦA BẠN BÈ (Không đụng chạm)
+        // Cập nhật thanh chakra
+        public void UpdateChakra(double p1Chakra, double p2Chakra, double maxChakra = 100)
+        {
+            Hud.SetChakra(p1Chakra, p2Chakra, maxChakra);
+        }
         private void StartDemo()
         {
             double p1 = _maxHealth;
@@ -246,7 +319,7 @@ namespace BleachVsNarutoMini.UI
             }
         }
 
-        // === BẮT SỰ KIỆN BÀN PHÍM TỪ BÊN NGOÀI ===
+        // BẮT SỰ KIỆN BÀN PHÍM TỪ BÊN NGOÀI 
         private static Key Normalize(KeyEventArgs e)
         {
             var key = e.Key == Key.ImeProcessed ? e.ImeProcessedKey : e.Key;
@@ -270,13 +343,11 @@ namespace BleachVsNarutoMini.UI
         }
         private bool CheckCollision(Image img1, Image img2)
         {
-            // Lấy tọa độ và kích thước tạo thành 1 khung chữ nhật cho Player 1
+            
             Rect hitbox1 = new Rect(Canvas.GetLeft(img1), Canvas.GetTop(img1), img1.Width, img1.Height);
 
-            // Tạo khung chữ nhật cho Player 2
             Rect hitbox2 = new Rect(Canvas.GetLeft(img2), Canvas.GetTop(img2), img2.Width, img2.Height);
 
-            // Lệnh IntersectsWith sẽ trả về true nếu 2 khung chạm nhau
             return hitbox1.IntersectsWith(hitbox2);
         }
     }

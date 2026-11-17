@@ -9,7 +9,8 @@ using System.Windows.Threading;
 
 namespace BleachVsNarutoMini.UI
 {
-    //  5. MÀN HÌNH KẾT THÚC
+    //  MÀN HÌNH KẾT THÚC
+    //  winnerName = null  ->  hiện "HÒA!" (hết giờ mà máu bằng nhau)
     public class GameOverView : UserControl
     {
         public event Action ReplayClicked;
@@ -35,8 +36,8 @@ namespace BleachVsNarutoMini.UI
 
             panel.Children.Add(new TextBlock
             {
-                Text = winnerName + " THẮNG!",
-                FontSize = 20,
+                Text = winnerName == null ? "HÒA!" : winnerName + " THẮNG!",
+                FontSize = 28,
                 Foreground = Brushes.Gold,
                 HorizontalAlignment = HorizontalAlignment.Center,
                 Margin = new Thickness(0, 10, 0, 30)
