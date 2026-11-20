@@ -34,7 +34,7 @@ namespace BleachVsNarutoMini.UI
 
         private readonly ContentControl _screenHost;
         private DispatcherTimer _demoTimer;
-        private double _maxHealth = 100;
+        private double _maxHealth = 300;
 
         // [SỬA] Đổi kiểu sang Fighter để P1/P2 có thể là Naruto hoặc Sasuke tùy lựa chọn
         private Entities.Fighter player1;
@@ -44,8 +44,8 @@ namespace BleachVsNarutoMini.UI
         private TimeSpan _lastRender;
         private bool _running;
         private int _shownHp1 = -1, _shownHp2 = -1;
-        private double p1Health = 100;
-        private double p2Health = 100;
+        private double p1Health = 300;
+        private double p2Health = 300;
 
         // [MỚI] Đồng hồ đếm ngược
         private double _timeLeft;
@@ -146,15 +146,19 @@ namespace BleachVsNarutoMini.UI
             }
 
             // [MỚI] Thanh chakra. TODO (khi N2 thêm Chakra vào Fighter): bỏ comment dòng dưới
-            // UpdateChakra(player1.Chakra, player2.Chakra, player1.MaxChakra);
+            UpdateChakra(player1.Chakra, player2.Chakra, player1.MaxChakra);
 
             // [MỚI] Đồng hồ đếm ngược (tính theo dt nên dừng game là đồng hồ dừng theo)
-            _timeLeft -= dt;
-            int secs = (int)Math.Ceiling(Math.Max(0, _timeLeft));
-            if (secs != _shownTime)
+            // [Phát thêm] Chỉ đếm ngược khi có giới hạn thời gian (MatchSeconds > 0), bỏ qua nếu chọn Vô hạn
+            if (MatchSeconds > 0)
             {
-                _shownTime = secs;
-                Hud.SetTime(secs);
+                _timeLeft -= dt;
+                int secs = (int)Math.Ceiling(Math.Max(0, _timeLeft));
+                if (secs != _shownTime)
+                {
+                    _shownTime = secs;
+                    Hud.SetTime(secs);
+                }
             }
 
             // [SỬA] Tên người thắng lấy theo nhân vật đã chọn; truyền null nghĩa là HÒA
@@ -162,12 +166,14 @@ namespace BleachVsNarutoMini.UI
             else if (player1.IsDead) ShowGameOver(PlayerLabel(2, SelectedP2));
             else if (player2.IsDead) ShowGameOver(PlayerLabel(1, SelectedP1));
             // [MỚI] Hết giờ: ai còn nhiều máu hơn thì thắng, bằng nhau thì hòa
-            else if (_timeLeft <= 0)
+            // [Phát thêm] Chỉ xét hết giờ khi không phải chế độ Vô hạn (MatchSeconds > 0)
+            else if (MatchSeconds > 0 && _timeLeft <= 0)
             {
                 if (player1.Hp > player2.Hp) ShowGameOver(PlayerLabel(1, SelectedP1));
                 else if (player2.Hp > player1.Hp) ShowGameOver(PlayerLabel(2, SelectedP2));
                 else ShowGameOver(null);
             }
+        
         }
 
         public void ShowMenu()
@@ -179,12 +185,14 @@ namespace BleachVsNarutoMini.UI
             _projectiles.Clear();
 
             // [SỬA] Menu giờ có 2 cột chọn nhân vật cho P1 và P2
-            var menu = new MainMenuView(SelectedP1, SelectedP2, SelectedMap);
-            menu.StartClicked += delegate (string p1, string p2, string map)
+            // [Phát thêm] Truyền thêm MatchSeconds và nhận lại thời gian người chơi chọn từ menu
+            var menu = new MainMenuView(SelectedP1, SelectedP2, SelectedMap, MatchSeconds);
+            menu.StartClicked += delegate (string p1, string p2, string map, int seconds)
             {
                 SelectedP1 = p1;
                 SelectedP2 = p2;
                 SelectedMap = map;
+                MatchSeconds = seconds; // [Phát thêm] Cập nhật thời gian trận đấu
                 StartGame();
             };
             _screenHost.Content = menu;
@@ -221,6 +229,8 @@ namespace BleachVsNarutoMini.UI
             // [SỬA] Tạo nhân vật theo lựa chọn (xem hàm CreateFighter bên dưới)
             player1 = CreateFighter(SelectedP1);
             player2 = CreateFighter(SelectedP2);
+            player1.OnNotEnoughChakra += () => Hud.WarnLowChakra(1); // [Phát thêm] Báo đỏ + rung thanh Chakra P1
+            player2.OnNotEnoughChakra += () => Hud.WarnLowChakra(2); // [Phát thêm] Báo đỏ + rung thanh Chakra P2
             GameCanvas.Children.Add(player1.Sprite);
             GameCanvas.Children.Add(player2.Sprite);
             StartLoop(); // Bắt đầu cho phép di chuyển

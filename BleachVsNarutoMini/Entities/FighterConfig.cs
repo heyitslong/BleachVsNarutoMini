@@ -5,7 +5,8 @@ using System.Text;
 using System.Threading.Tasks;
 namespace BleachVsNarutoMini.Entities
 {
-    public enum FighterState { Idle, Run, Attack, Jump, Block, Throw, Ultimate, Hurt, Dead }
+    // [Phát thêm] Bổ sung trạng thái Dash (Lướt)
+    public enum FighterState { Idle, Run, Attack, Jump, Block, Throw, Ultimate, Dash, Hurt, Dead }
 
     public class FighterConfig
     {
@@ -16,6 +17,17 @@ namespace BleachVsNarutoMini.Entities
         public double GroundBottom { get; init; } = 330;
         public bool StartFacingRight { get; init; } = true;
         public double FootPadding { get; init; } = 0;
+
+        // [Phát thêm] Cấu hình sát thương và tầm đánh chiêu cuối riêng cho từng nhân vật
+        public int AttackDamage { get; init; } = 5;
+        public int ThrowDamage { get; init; } = 15;
+        public int UltimateDamage { get; init; } = 35;
+        public double UltimateReach { get; init; } = 35;
+
+        // [Phát thêm] Cấu hình gồng chiêu và lướt áp sát khi dùng chiêu cuối
+        public int UltimateChargeFrames { get; init; } = 0; // Số frame đứng gồng trước khi lao tới (0 = mặc định một nửa số frame)
+        public double UltimateDashSpeed { get; init; } = 950; // Tốc độ lao tới áp sát (pixel/giây)
+        public double UltimateDashDistance { get; init; } = 420; // Khoảng cách lướt tối đa nếu đối phương né được
 
         public string Idle { get; init; } = "";
 

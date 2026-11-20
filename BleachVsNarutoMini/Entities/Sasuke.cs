@@ -36,6 +36,17 @@ namespace BleachVsNarutoMini.Entities
             HurtPrefix = "sskbidanh",
             DeadFrames = 8, // Chết lăn ra đủ 8 frame
 
+            // [Phát thêm] Chỉ số sát thương riêng của Sasuke (Đánh thường và phi tiêu nhỉnh hơn Naruto)
+            AttackDamage = 6,
+            ThrowDamage = 18,
+            UltimateDamage = 32,
+            UltimateReach = 30,
+
+            // [Phát thêm] Gồng Chidori 11 frame đầu, sau đó lao cực nhanh tới áp sát đối phương
+            UltimateChargeFrames = 11,
+            UltimateDashSpeed = 1150,
+            UltimateDashDistance = 460,
+
             Width = 100,
             Height = 110,
             BodyWidthRatio = 0.5,
@@ -45,8 +56,9 @@ namespace BleachVsNarutoMini.Entities
             StartFacingRight = false
         };
 
-        // Gán 9 phím: Trái(Left), Phải(Right), Nhảy(Up), Đánh(Z), Đỡ(Down), Ném(C), Chiêu cuối(X)
-        // Tui gán nút Nhảy là Mũi tên Lên (Up) cho tiện tay kết hợp với nút Xuống (Down) đỡ đòn nha.
-        public Sasuke() : base(830, Config, Key.Left, Key.Right, Key.Up, Key.Z, Key.Down, Key.C, Key.X) { }
+
+        // Thứ tự: Trái, Phải, Nhảy, Đánh, Đỡ, Ném, Chiêu cuối, Lướt(3)
+        // [Phát thêm] Truyền thêm Key.D3 làm nút lướt của Sasuke
+        public Sasuke() : base(830, Config, Key.Left, Key.Right, Key.D2, Key.D1, Key.Down, Key.D4, Key.D5, Key.D3) { }
     }
 }

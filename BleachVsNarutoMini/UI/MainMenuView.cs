@@ -9,9 +9,9 @@ using System.Windows.Threading;
 
 namespace BleachVsNarutoMini.UI
 {
-    
+
     //  MÀN HÌNH MENU: 2 cột chọn nhân vật (P1 | P2) + chọn đấu trường
-   
+
     public class MainMenuView : UserControl
     {
         // DANH SÁCH NHÂN VẬT 
@@ -31,14 +31,17 @@ namespace BleachVsNarutoMini.UI
         }
 
         // (nhân vật P1, nhân vật P2, đấu trường)  
-        public event Action<string, string, string> StartClicked;
+        // [Phát thêm] Bổ sung tham số thứ 4 là thời gian trận đấu (giây, -1 = vô hạn)
+        public event Action<string, string, string, int> StartClicked;
 
         private readonly List<RadioButton> _p1Radios = new List<RadioButton>();
         private readonly List<RadioButton> _p2Radios = new List<RadioButton>();
+        private readonly List<RadioButton> _timeRadios = new List<RadioButton>(); // [Phát thêm] Danh sách nút chọn thời gian
         private readonly RadioButton _rbArena1;
         private readonly RadioButton _rbArena2;
 
-        public MainMenuView(string lastP1 = "Knight", string lastP2 = "Archer", string lastMap = "Arena1")
+        // [Phát thêm] Thêm tham số lastTime = 60 để ghi nhớ lựa chọn thời gian của trận trước
+        public MainMenuView(string lastP1 = "Knight", string lastP2 = "Archer", string lastMap = "Arena1", int lastTime = 60)
         {
             var panel = new StackPanel
             {
@@ -87,13 +90,50 @@ namespace BleachVsNarutoMini.UI
             {
                 Orientation = Orientation.Horizontal,
                 HorizontalAlignment = HorizontalAlignment.Center,
-                Margin = new Thickness(0, 0, 0, 22)
+                Margin = new Thickness(0, 0, 0, 14)
             };
             _rbArena1 = UiKit.MakeRadio("Đấu trường Đá", "Map", lastMap != "Arena2", new Thickness(0, 0, 25, 0));
             _rbArena2 = UiKit.MakeRadio("Đấu trường Băng", "Map", lastMap == "Arena2", new Thickness(0));
             mapRow.Children.Add(_rbArena1);
             mapRow.Children.Add(_rbArena2);
             panel.Children.Add(mapRow);
+
+            // [Phát thêm] Khu vực chọn thời gian trận đấu: 60s, 90s, 120s và Vô hạn
+            panel.Children.Add(new TextBlock
+            {
+                Text = "Thời gian trận đấu:",
+                Foreground = Brushes.White,
+                FontSize = 16,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                Margin = new Thickness(0, 4, 0, 8)
+            });
+
+            var timeRow = new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                Margin = new Thickness(0, 0, 0, 22)
+            };
+
+            var timeOptions = new[]
+            {
+                new KeyValuePair<string, int>("60s", 60),
+                new KeyValuePair<string, int>("90s", 90),
+                new KeyValuePair<string, int>("120s", 120),
+                new KeyValuePair<string, int>("Vô hạn", -1)
+            };
+
+            for (int i = 0; i < timeOptions.Length; i++)
+            {
+                var opt = timeOptions[i];
+                var margin = i < timeOptions.Length - 1 ? new Thickness(0, 0, 20, 0) : new Thickness(0);
+                var rb = UiKit.MakeRadio(opt.Key, "MatchTime", opt.Value == lastTime, margin);
+                rb.Tag = opt.Value;
+                _timeRadios.Add(rb);
+                timeRow.Children.Add(rb);
+            }
+            panel.Children.Add(timeRow);
+            // [Phát thêm] Kết thúc phần chọn thời gian
 
             //  Nút bấm 
             var buttons = new StackPanel { Width = 300, HorizontalAlignment = HorizontalAlignment.Center };
@@ -154,12 +194,21 @@ namespace BleachVsNarutoMini.UI
             return Characters[0].Key;
         }
 
+        // [Phát thêm] Đọc thời gian trận đấu đang được chọn (mặc định 60s)
+        private int GetSelectedTime()
+        {
+            foreach (var rb in _timeRadios)
+                if (rb.IsChecked == true) return (int)rb.Tag;
+            return 60;
+        }
+
         private void Start_Click(object sender, RoutedEventArgs e)
         {
             string p1 = GetSelected(_p1Radios);
             string p2 = GetSelected(_p2Radios);
             string map = _rbArena1.IsChecked == true ? "Arena1" : "Arena2";
-            if (StartClicked != null) StartClicked(p1, p2, map);
+            int seconds = GetSelectedTime(); // [Phát thêm] Lấy thời gian đã chọn
+            if (StartClicked != null) StartClicked(p1, p2, map, seconds); // [Phát thêm] Truyền thêm seconds
         }
 
         private void Exit_Click(object sender, RoutedEventArgs e)

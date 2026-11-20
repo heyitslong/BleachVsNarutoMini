@@ -30,6 +30,17 @@ namespace BleachVsNarutoMini.Entities
             HurtPrefix = "narutobithuong",
             DeadFrames = 6,
 
+            // [Phát thêm] Chỉ số sát thương riêng của Naruto (Chiêu cuối mạnh và tầm rộng hơn)
+            AttackDamage = 5,
+            ThrowDamage = 12,
+            UltimateDamage = 40,
+            UltimateReach = 35,
+
+            // [Phát thêm] Gồng Rasengan 16 frame đầu, sau đó chạy tới áp sát đối phương
+            UltimateChargeFrames = 16,
+            UltimateDashSpeed = 950,
+            UltimateDashDistance = 420,
+
             // Các thông số giữ nguyên...
 
             // Sửa lại đoạn kích thước này:
@@ -42,7 +53,8 @@ namespace BleachVsNarutoMini.Entities
             StartFacingRight = true
         };
 
-        // Gán phím: Trái(A), Phải(D), Nhảy(K), Đánh(J), Đỡ(S), Phi tiêu(U), Chiêu cuối(I)
-        public Naruto() : base(100, Config, Key.A, Key.D, Key.K, Key.J, Key.S, Key.U, Key.I) { }
+        // Gán phím: Trái(A), Phải(D), Nhảy(K), Đánh(J), Đỡ(S), Phi tiêu(U), Chiêu cuối(I), Lướt(L)
+        // [Phát thêm] Truyền thêm Key.L làm nút lướt của Naruto
+        public Naruto() : base(100, Config, Key.A, Key.D, Key.K, Key.J, Key.S, Key.U, Key.I, Key.L) { }
     }
 }

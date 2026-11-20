@@ -71,11 +71,18 @@ namespace BleachVsNarutoMini.UI
     public class ChakraBar : Grid
     {
         private readonly ProgressBar _bar;
+        private readonly TranslateTransform _shakeTransform = new TranslateTransform(); // [Phát thêm] Dịch chuyển ngang tạo hiệu ứng rung
+        private readonly DispatcherTimer _warnTimer; // [Phát thêm] Bộ đếm thời gian chạy hiệu ứng cảnh báo
+        private double _warnTimeLeft; // [Phát thêm] Thời gian rung còn lại (giây)
+
+        private static readonly SolidColorBrush NormalBrush = new SolidColorBrush(Color.FromRgb(0x29, 0xB6, 0xF6)); // [Phát thêm] Màu xanh mặc định
+        private static readonly SolidColorBrush WarningBrush = new SolidColorBrush(Color.FromRgb(0xF4, 0x43, 0x36)); // [Phát thêm] Màu đỏ cảnh báo thiếu mana
 
         public ChakraBar(bool rightToLeft)
         {
             Height = 10;
             Margin = new Thickness(0, 3, 0, 0);
+            RenderTransform = _shakeTransform; // [Phát thêm] Gắn hiệu ứng rung ngang vào thanh Chakra
 
             _bar = new ProgressBar
             {
@@ -83,13 +90,17 @@ namespace BleachVsNarutoMini.UI
                 Maximum = 100,
                 Value = 100,
                 Background = new SolidColorBrush(Color.FromRgb(0x22, 0x22, 0x33)),
-                Foreground = new SolidColorBrush(Color.FromRgb(0x29, 0xB6, 0xF6)),
+                Foreground = NormalBrush,
                 BorderBrush = Brushes.Black,
                 BorderThickness = new Thickness(1),
                 FlowDirection = rightToLeft ? FlowDirection.RightToLeft : FlowDirection.LeftToRight
             };
 
             Children.Add(_bar);
+
+            // [Phát thêm] Timer cập nhật khung hình rung lắc trong 0.35 giây
+            _warnTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(16) };
+            _warnTimer.Tick += OnWarnTick;
         }
 
         public void SetValue(double value, double max)
@@ -98,6 +109,32 @@ namespace BleachVsNarutoMini.UI
             value = Math.Max(0, Math.Min(value, max));
             _bar.Maximum = max;
             _bar.Value = value;
+        }
+
+        // [Phát thêm] Kích hoạt báo đỏ và rung thanh Chakra khi bấm chiêu lúc thiếu mana
+        public void TriggerWarning()
+        {
+            _warnTimeLeft = 0.35;
+            _bar.Foreground = WarningBrush;
+            _bar.BorderBrush = Brushes.Red;
+            if (!_warnTimer.IsEnabled) _warnTimer.Start();
+        }
+
+        // [Phát thêm] Xử lý rung ngang và trả về màu xanh sau khi hết cảnh báo
+        private void OnWarnTick(object? sender, EventArgs e)
+        {
+            _warnTimeLeft -= 0.016;
+            if (_warnTimeLeft <= 0)
+            {
+                _warnTimer.Stop();
+                _shakeTransform.X = 0;
+                _bar.Foreground = NormalBrush;
+                _bar.BorderBrush = Brushes.Black;
+                return;
+            }
+
+            double progress = _warnTimeLeft / 0.35;
+            _shakeTransform.X = Math.Sin(_warnTimeLeft * 55) * 6 * progress;
         }
     }
 
@@ -201,10 +238,24 @@ namespace BleachVsNarutoMini.UI
             _p2Chakra.SetValue(p2, max);
         }
 
+        // [Phát thêm] Gọi hiệu ứng báo đỏ và rung thanh Chakra của người chơi tương ứng
+        public void WarnLowChakra(int playerIndex)
+        {
+            if (playerIndex == 1) _p1Chakra.TriggerWarning();
+            else if (playerIndex == 2) _p2Chakra.TriggerWarning();
+        }
+
         // Hiện số giây còn lại; từ 10 giây trở xuống thì chuyển sang màu đỏ
         public void SetTime(int seconds)
         {
-            if (seconds < 0) seconds = 0;
+            // [Phát thêm] Hiển thị ký hiệu vô cực khi chọn chế độ vô hạn thời gian (-1)
+            if (seconds < 0)
+            {
+                _timeText.Text = "∞";
+                _timeText.Foreground = Brushes.White;
+                return;
+            }
+
             _timeText.Text = seconds.ToString();
             _timeText.Foreground = seconds <= 10 ? Brushes.Red : Brushes.White;
         }
