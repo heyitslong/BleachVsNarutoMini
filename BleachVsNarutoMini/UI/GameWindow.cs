@@ -65,8 +65,9 @@ namespace BleachVsNarutoMini.UI
 
             Title = "PVP Game";
             InputMethod.SetIsInputMethodEnabled(this, false);
-            SizeToContent = SizeToContent.WidthAndHeight;
-            ResizeMode = ResizeMode.NoResize;
+            ResizeMode = ResizeMode.CanResize;
+            Width = 1280;
+            Height = 800;
             WindowStartupLocation = WindowStartupLocation.CenterScreen;
             Background = Brushes.Black;
 
@@ -86,7 +87,12 @@ namespace BleachVsNarutoMini.UI
             root.Children.Add(GameCanvas);
             root.Children.Add(Hud);
             root.Children.Add(_screenHost);
-            Content = root;
+
+            Content = new Viewbox
+            {
+                Stretch = Stretch.Uniform,
+                Child = root
+            };
 
             CurrentMap = MapLibrary.Get(SelectedMap);
             MapRenderer.Draw(MapLayer, CurrentMap);
@@ -347,10 +353,35 @@ namespace BleachVsNarutoMini.UI
             return key;
         }
 
+        private bool _isFullScreen = false;
+
         protected override void OnKeyDown(KeyEventArgs e)
         {
             base.OnKeyDown(e);
-            BleachVsNarutoMini.Engine.InputManager.KeyDown(Normalize(e));
+            var key = Normalize(e);
+
+            if (key == Key.F11)
+            {
+                ToggleFullScreen();
+                return;
+            }
+
+            BleachVsNarutoMini.Engine.InputManager.KeyDown(key);
+        }
+
+        private void ToggleFullScreen()
+        {
+            _isFullScreen = !_isFullScreen;
+            if (_isFullScreen)
+            {
+                WindowStyle = WindowStyle.None;
+                WindowState = WindowState.Maximized;
+            }
+            else
+            {
+                WindowStyle = WindowStyle.SingleBorderWindow;
+                WindowState = WindowState.Normal;
+            }
         }
 
         protected override void OnKeyUp(KeyEventArgs e)
