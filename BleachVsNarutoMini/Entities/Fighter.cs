@@ -27,7 +27,7 @@ namespace BleachVsNarutoMini.Entities
         private const double ChakraRegenPerSec = 8;
 
         private readonly FighterConfig _cfg;
-        private readonly Key _left, _right, _jump, _attack, _block, _throw, _ult, _dash; // [Phát thêm] Thêm phím _dash
+        private Key _left, _right, _jump, _attack, _block, _throw, _ult, _dash; // [Phát thêm] Thêm phím _dash, [Nghĩa sửa] bỏ readonly để gán phím lại được
         private readonly ScaleTransform _flip = new(1, 1);
 
         private double _vy, _timer;
@@ -86,8 +86,26 @@ namespace BleachVsNarutoMini.Entities
             Sprite = new Image { Width = Width, Height = Height, RenderTransform = _flip, RenderTransformOrigin = new Point(0.5, 0.5) };
             RenderOptions.SetBitmapScalingMode(Sprite, BitmapScalingMode.NearestNeighbor);
             SetImage(_cfg.Idle); Draw();
-        }
 
+        }
+        //[Nghĩa thêm] thêm Assign Player để chọn được nhân vật, bỏ mặc định Nar trái Sa phải
+        public void AssignPlayer(int playerIndex, double spawnX)
+        {
+            if (playerIndex == 1)
+            {
+                _left = Key.A; _right = Key.D; _jump = Key.K; _attack = Key.J;
+                _block = Key.S; _throw = Key.U; _ult = Key.I; _dash = Key.L;
+            }
+            else
+            {
+                _left = Key.Left; _right = Key.Right; _jump = Key.D2; _attack = Key.D1;
+                _block = Key.Down; _throw = Key.D4; _ult = Key.D5; _dash = Key.D3;
+            }
+
+            X = spawnX;
+            FacingRight = playerIndex == 1;
+            Draw();
+        }
         public void UpdateLogic(double dt)
         {
             if (State == FighterState.Dead) { UpdateDead(dt); Draw(); return; }
