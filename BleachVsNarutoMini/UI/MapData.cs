@@ -51,7 +51,7 @@ namespace BleachVsNarutoMini.UI
             {
                 Id = "Arena1",
                 Name = "Đấu trường Đá",
-                Background = LoadImageBrush("Assets/arena1_bg.png",
+                Background = LoadImageBrush("Assets/Images/arena1_bg.png",
                             Frozen(Color.FromRgb(0x2B, 0x2B, 0x3C))),
                 ObstacleFill = Frozen(Color.FromRgb(0x7A, 0x6A, 0x58)),
                 ObstacleBorder = Brushes.Black,
@@ -76,7 +76,7 @@ namespace BleachVsNarutoMini.UI
             {
                 Id = "Arena2",
                 Name = "Đấu trường Băng",
-                Background = LoadImageBrush("Assets/arena2_bg.png",
+                Background = LoadImageBrush("Assets/Images/arena2_bg.png",
                             Frozen(Color.FromRgb(0x1B, 0x3A, 0x4B))),
                 ObstacleFill = Frozen(Color.FromRgb(0x8E, 0xCA, 0xE6)),
                 ObstacleBorder = Frozen(Color.FromRgb(0x21, 0x9E, 0xBC)),

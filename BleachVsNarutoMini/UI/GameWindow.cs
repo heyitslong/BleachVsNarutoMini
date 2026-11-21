@@ -51,6 +51,10 @@ namespace BleachVsNarutoMini.UI
         private double _timeLeft;
         private int _shownTime = -1;
 
+        // [MỚI] Vị trí xuất phát: người chơi 1 luôn bên trái, người chơi 2 luôn bên phải
+        private const double P1StartX = 100;
+        private const double P2StartX = 830;
+
         public GameWindow()
         {
             DemoMode = false;
@@ -145,7 +149,7 @@ namespace BleachVsNarutoMini.UI
                 UpdateHud(player1.Hp, player2.Hp, _maxHealth);
             }
 
-            // [MỚI] Thanh chakra. TODO (khi N2 thêm Chakra vào Fighter): bỏ comment dòng dưới
+            // [MỚI] Thanh chakra
             UpdateChakra(player1.Chakra, player2.Chakra, player1.MaxChakra);
 
             // [MỚI] Đồng hồ đếm ngược (tính theo dt nên dừng game là đồng hồ dừng theo)
@@ -173,7 +177,7 @@ namespace BleachVsNarutoMini.UI
                 else if (player2.Hp > player1.Hp) ShowGameOver(PlayerLabel(2, SelectedP2));
                 else ShowGameOver(null);
             }
-        
+
         }
 
         public void ShowMenu()
@@ -229,6 +233,9 @@ namespace BleachVsNarutoMini.UI
             // [SỬA] Tạo nhân vật theo lựa chọn (xem hàm CreateFighter bên dưới)
             player1 = CreateFighter(SelectedP1);
             player2 = CreateFighter(SelectedP2);
+            // [MỚI] Nhân vật nào cũng được: P1 đứng trái + dùng phím P1, P2 đứng phải + dùng phím P2
+            player1.AssignPlayer(1, P1StartX);
+            player2.AssignPlayer(2, P2StartX);
             player1.OnNotEnoughChakra += () => Hud.WarnLowChakra(1); // [Phát thêm] Báo đỏ + rung thanh Chakra P1
             player2.OnNotEnoughChakra += () => Hud.WarnLowChakra(2); // [Phát thêm] Báo đỏ + rung thanh Chakra P2
             GameCanvas.Children.Add(player1.Sprite);
@@ -353,7 +360,7 @@ namespace BleachVsNarutoMini.UI
         }
         private bool CheckCollision(Image img1, Image img2)
         {
-            
+
             Rect hitbox1 = new Rect(Canvas.GetLeft(img1), Canvas.GetTop(img1), img1.Width, img1.Height);
 
             Rect hitbox2 = new Rect(Canvas.GetLeft(img2), Canvas.GetTop(img2), img2.Width, img2.Height);
