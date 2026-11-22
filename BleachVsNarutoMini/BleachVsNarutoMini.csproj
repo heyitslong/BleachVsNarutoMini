@@ -244,6 +244,7 @@
     <Resource Include="Assets\Images\ssknhay5.png" />
     <Resource Include="Assets\Images\ssknhay6.png" />
     <Resource Include="Assets\Images\sskphongthu.png" />
+    <Resource Include="Assets\Images\menu_bg.png" />
   </ItemGroup>
 
   <ItemGroup>
