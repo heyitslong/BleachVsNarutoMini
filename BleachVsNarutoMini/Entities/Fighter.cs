@@ -17,7 +17,7 @@ namespace BleachVsNarutoMini.Entities
 
         // [Phát thêm] Thông số kỹ năng Đánh thường (Attack)
         private const double AttackCooldown = 0.16;      // Thời gian chờ sau khi chạy hết chuỗi frame đánh (1 giây)
-        private const double AttackStepDistance = 8;    // Độ nhúc nhích tiến lên phía trước ở mỗi tư thế đánh (pixel)
+        private const double AttackStepDistance = 4;    // Độ nhúc nhích tiến lên phía trước ở mỗi tư thế đánh (pixel)
 
         // [Phát thêm] Thông số kỹ năng Lướt (Dash)
         private const double DashSpeed = 1000;          // Tốc độ lướt (pixel/giây)
@@ -368,7 +368,7 @@ namespace BleachVsNarutoMini.Entities
             // Đòn đánh thường và combo
             if (State == FighterState.Attack)
             {
-                bool hitFrame = _frame == 1 || (_combo && _frame >= 5);
+                bool hitFrame = _frame == 1 || (_combo && _frame == 5);
                 if (!hitFrame || _lastHitFrame == _frame) return;
 
                 if (AttackBox.IntersectsWith(target.Bounds))
