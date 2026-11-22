@@ -9,6 +9,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Assets\effect\bui1.png" />
+    <None Remove="Assets\effect\bui2.png" />
+    <None Remove="Assets\effect\bui3.png" />
+    <None Remove="Assets\effect\bui4.png" />
+    <None Remove="Assets\effect\bui5.png" />
+    <None Remove="Assets\effect\bui6.png" />
+    <None Remove="Assets\effect\bui7.png" />
     <None Remove="Assets\Images\narutobithuong1.png" />
     <None Remove="Assets\Images\narutobithuong2.png" />
     <None Remove="Assets\Images\narutobithuong3.png" />
@@ -117,6 +124,13 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Resource Include="Assets\effect\bui1.png" />
+    <Resource Include="Assets\effect\bui2.png" />
+    <Resource Include="Assets\effect\bui3.png" />
+    <Resource Include="Assets\effect\bui4.png" />
+    <Resource Include="Assets\effect\bui5.png" />
+    <Resource Include="Assets\effect\bui6.png" />
+    <Resource Include="Assets\effect\bui7.png" />
     <Resource Include="Assets\Images\arena1_bg.png" />
     <Resource Include="Assets\Images\arena2_bg.png" />
     <Resource Include="Assets\Images\narutobithuong1.png" />

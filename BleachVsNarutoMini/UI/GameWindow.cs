@@ -40,6 +40,7 @@ namespace BleachVsNarutoMini.UI
         private Entities.Fighter player1;
         private Entities.Fighter player2;
         private readonly List<Entities.Projectile> _projectiles = new();
+        private readonly List<Entities.DustEffect> _effects = new(); // [Phát thêm] Danh sách hiệu ứng bụi đang chạy trên sân
 
         private TimeSpan _lastRender;
         private bool _running;
@@ -147,6 +148,18 @@ namespace BleachVsNarutoMini.UI
                 }
             }
 
+            // [Phát thêm] Cập nhật và tự động xóa hiệu ứng bụi khi chạy hết 7 frame
+            for (int i = _effects.Count - 1; i >= 0; i--)
+            {
+                var effect = _effects[i];
+                effect.Update(dt);
+                if (effect.IsFinished)
+                {
+                    GameCanvas.Children.Remove(effect.Sprite);
+                    _effects.RemoveAt(i);
+                }
+            }
+
             // Chỉ cập nhật thanh máu khi máu thật sự đổi
             if (player1.Hp != _shownHp1 || player2.Hp != _shownHp2)
             {
@@ -157,6 +170,8 @@ namespace BleachVsNarutoMini.UI
 
             // [MỚI] Thanh chakra
             UpdateChakra(player1.Chakra, player2.Chakra, player1.MaxChakra);
+            UpdateGuard(player1.Guard, player2.Guard, player1.MaxGuard); // [Phát thêm] Cập nhật thanh chống đỡ
+
 
             // [MỚI] Đồng hồ đếm ngược (tính theo dt nên dừng game là đồng hồ dừng theo)
             // [Phát thêm] Chỉ đếm ngược khi có giới hạn thời gian (MatchSeconds > 0), bỏ qua nếu chọn Vô hạn
@@ -193,6 +208,7 @@ namespace BleachVsNarutoMini.UI
             Hud.Visibility = Visibility.Collapsed;
             GameCanvas.Children.Clear();
             _projectiles.Clear();
+            _effects.Clear(); // [Phát thêm] Xóa sạch hiệu ứng bụi khi quay về menu
 
             // [SỬA] Menu giờ có 2 cột chọn nhân vật cho P1 và P2
             // [Phát thêm] Truyền thêm MatchSeconds và nhận lại thời gian người chơi chọn từ menu
@@ -214,6 +230,7 @@ namespace BleachVsNarutoMini.UI
             _screenHost.Content = null;
             GameCanvas.Children.Clear();
             _projectiles.Clear();
+            _effects.Clear(); // [Phát thêm] Xóa sạch hiệu ứng bụi trước khi bắt đầu trận mới
 
             CurrentMap = MapLibrary.Get(SelectedMap);
             MapRenderer.Draw(MapLayer, CurrentMap);
@@ -224,7 +241,8 @@ namespace BleachVsNarutoMini.UI
             Hud.Visibility = Visibility.Visible;
             Hud.SetNames(PlayerName(1, SelectedP1), PlayerName(2, SelectedP2));   // [SỬA] hiện tên nhân vật
             UpdateHud(p1Health, p2Health, _maxHealth);
-            UpdateChakra(100, 100, 100);                                          // [MỚI]
+            UpdateChakra(200, 200, 200);                                          // [MỚI] [Phát thêm] Đồng bộ mức Chakra khởi điểm 200
+            UpdateGuard(45, 45, 45); // [Phát thêm] Khởi tạo thanh chống đỡ đầy 45/45
 
             // [MỚI] Đặt lại đồng hồ và HUD cho trận mới
             _shownHp1 = -1;
@@ -242,6 +260,8 @@ namespace BleachVsNarutoMini.UI
             // [MỚI] Nhân vật nào cũng được: P1 đứng trái + dùng phím P1, P2 đứng phải + dùng phím P2
             player1.AssignPlayer(1, P1StartX);
             player2.AssignPlayer(2, P2StartX);
+            player1.Opponent = player2; // [Phát thêm] Gắn đối thủ để P1 tốc biến ra sau lưng P2
+            player2.Opponent = player1; // [Phát thêm] Gắn đối thủ để P2 tốc biến ra sau lưng P1
             player1.OnNotEnoughChakra += () => Hud.WarnLowChakra(1); // [Phát thêm] Báo đỏ + rung thanh Chakra P1
             player2.OnNotEnoughChakra += () => Hud.WarnLowChakra(2); // [Phát thêm] Báo đỏ + rung thanh Chakra P2
             GameCanvas.Children.Add(player1.Sprite);
@@ -262,6 +282,7 @@ namespace BleachVsNarutoMini.UI
                     Platforms = CurrentMap.Obstacles
                 };
                 s.OnSpawnProjectile += AddProjectile;
+                s.OnSpawnEffect += AddEffect; // [Phát thêm] Lắng nghe hiệu ứng bụi của Sasuke
                 return s;
             }
 
@@ -271,6 +292,7 @@ namespace BleachVsNarutoMini.UI
                 Platforms = CurrentMap.Obstacles
             };
             n.OnSpawnProjectile += AddProjectile;
+            n.OnSpawnEffect += AddEffect; // [Phát thêm] Lắng nghe hiệu ứng bụi của Naruto
             return n;
         }
 
@@ -290,6 +312,13 @@ namespace BleachVsNarutoMini.UI
         {
             _projectiles.Add(proj);
             GameCanvas.Children.Add(proj.Sprite);
+        }
+
+        // [Phát thêm] Đưa hiệu ứng bụi lên GameCanvas
+        private void AddEffect(Entities.DustEffect effect)
+        {
+            _effects.Add(effect);
+            GameCanvas.Children.Add(effect.Sprite);
         }
 
         // [SỬA] winnerName = null nghĩa là HÒA
@@ -315,6 +344,12 @@ namespace BleachVsNarutoMini.UI
         {
             Hud.SetChakra(p1Chakra, p2Chakra, maxChakra);
         }
+        // [Phát thêm] Cập nhật thanh chống đỡ
+        public void UpdateGuard(double p1Guard, double p2Guard, double maxGuard = 45)
+        {
+            Hud.SetGuard(p1Guard, p2Guard, maxGuard);
+        }
+
         private void StartDemo()
         {
             double p1 = _maxHealth;

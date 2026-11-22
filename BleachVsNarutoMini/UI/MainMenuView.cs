@@ -403,7 +403,7 @@ namespace BleachVsNarutoMini.UI
             new CharacterInfo { Id = "Naruto", Name = "Naruto", Image = "narutodung.png",
                                 Special = "Rasengan", Attack = 5, Throw = 12, Ult = 40 },
             new CharacterInfo { Id = "Sasuke", Name = "Sasuke", Image = "sskdung1.png",
-                                Special = "Chidori", Attack = 6, Throw = 18, Ult = 32 }
+                                Special = "Chidori", Attack = 5, Throw = 18, Ult = 32 }
         };
 
         // Đổi id ("Naruto") sang tên hiển thị

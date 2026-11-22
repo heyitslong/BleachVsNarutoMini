@@ -37,7 +37,7 @@ namespace BleachVsNarutoMini.Entities
             DeadFrames = 8, // Chết lăn ra đủ 8 frame
 
             // [Phát thêm] Chỉ số sát thương riêng của Sasuke (Đánh thường và phi tiêu nhỉnh hơn Naruto)
-            AttackDamage = 6,
+            AttackDamage = 5,
             ThrowDamage = 18,
             UltimateDamage = 32,
             UltimateReach = 30,
@@ -57,8 +57,8 @@ namespace BleachVsNarutoMini.Entities
         };
 
 
-        // Thứ tự: Trái, Phải, Nhảy, Đánh, Đỡ, Ném, Chiêu cuối, Lướt(3)
-        // [Phát thêm] Truyền thêm Key.D3 làm nút lướt của Sasuke
-        public Sasuke() : base(830, Config, Key.Left, Key.Right, Key.D2, Key.D1, Key.Down, Key.D4, Key.D5, Key.D3) { }
+        // Thứ tự: Trái, Phải, Nhảy, Đánh, Đỡ, Ném, Chiêu cuối, Lướt(3), Tốc biến(6)
+        // [Phát thêm] Truyền thêm Key.D3 làm nút lướt và Key.D6 làm nút tốc biến của Sasuke
+        public Sasuke() : base(830, Config, Key.Left, Key.Right, Key.D2, Key.D1, Key.Down, Key.D4, Key.D5, Key.D3, Key.D6) { }
     }
 }

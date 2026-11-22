@@ -13,31 +13,62 @@ namespace BleachVsNarutoMini.Entities
         private const double Gravity = 1800;
         private const double JumpPower = -920;
         private const double RunFrameTime = 0.10;
+        private const double StageMargin = 65;      // [Phát thêm] Khoảng cách lề hai bên tường để nhân vật không chạm viền màn hình
+
+        // [Phát thêm] Thông số kỹ năng Đánh thường (Attack)
+        private const double AttackCooldown = 0.16;      // Thời gian chờ sau khi chạy hết chuỗi frame đánh (1 giây)
+        private const double AttackStepDistance = 8;    // Độ nhúc nhích tiến lên phía trước ở mỗi tư thế đánh (pixel)
 
         // [Phát thêm] Thông số kỹ năng Lướt (Dash)
-        private const double DashSpeed = 1000;      // Tốc độ lướt (pixel/giây)
-        private const double DashDistance = 200;    // [Phát thêm] Độ dài quãng đường lướt (pixel) - tăng/giảm số này để chỉnh độ dài
-        private const double DashCooldown = 0;   // Thời gian chờ giữa 2 lần lướt để chống nhấn liên tục
+        private const double DashSpeed = 1000;          // Tốc độ lướt (pixel/giây)
+        private const double DashDistance = 200;        // [Phát thêm] Độ dài quãng đường lướt (pixel) - tăng/giảm số này để chỉnh độ dài
+        private const double DashCooldown = 0;          // Thời gian chờ giữa 2 lần lướt để chống nhấn liên tục
 
         // Mức tiêu hao và tốc độ hồi Chakra
         private const double JumpChakraCost = 10;
-        private const double DashChakraCost = 10;  // [Phát thêm] Lướt tốn 10 chakra
+        private const double DashChakraCost = 10;       // [Phát thêm] Lướt tốn 10 chakra
+        private const double TeleportChakraCost = 20;   // [Phát thêm] Tốc biến tốn 20 chakra
+        private const double TeleportCooldown = 1.5;    // [Phát thêm] Thời gian chờ hồi chiêu tốc biến (1.5 giây)
         private const double ThrowChakraCost = 15;
+        private const int MaxConsecutiveThrows = 2;     // [Phát thêm] Số lần ném phi tiêu liên tiếp tối đa
+        private const double ThrowCooldown = 0.8;       // [Phát thêm] Thời gian chờ sau khi ném 2 lần liên tiếp (0.8 giây)
         private const double UltChakraCost = 70;
+        private const double UltCooldown = 3.0;         // [Phát thêm] Thời gian chờ hồi chiêu cuối (3 giây)
         private const double ChakraRegenPerSec = 8;
 
+        // [Phát thêm] Thông số thanh Chống đỡ (Guard)
+        private const double MaxGuardValue = 45;        // [Phát thêm] Sức chịu đựng tối đa của thanh chống đỡ (45 điểm)
+        private const double GuardRegenPerSec = 5;      // Tốc độ hồi thanh chống đỡ mỗi giây khi không đỡ
+        private const double GuardRegenDelay = 1.0;     // Thời gian chờ sau khi đỡ đòn mới bắt đầu hồi lại (giây)
+
+        // [Phát thêm] Thông số đẩy lùi khi trúng đòn (Knockback)
+        private const double HitKnockbackSpeed = 320;   // Vận tốc bật lùi khi trúng đòn thường/phi tiêu (pixel/giây)
+        private const double UltKnockbackSpeed = 480;   // Vận tốc bật lùi mạnh hơn khi trúng chiêu cuối (pixel/giây)
+        private const double KnockbackFriction = 1400;  // Lực ma sát giảm tốc độ đẩy lùi mỗi giây
+
         private readonly FighterConfig _cfg;
-        private Key _left, _right, _jump, _attack, _block, _throw, _ult, _dash; // [Phát thêm] Thêm phím _dash, [Nghĩa sửa] bỏ readonly để gán phím lại được
+        private Key _left, _right, _jump, _attack, _block, _throw, _ult, _dash, _teleport; // [Phát thêm] Thêm phím _dash và _teleport, [Nghĩa sửa] bỏ readonly để gán phím lại được
         private readonly ScaleTransform _flip = new(1, 1);
 
         private double _vy, _timer;
-        private double _dashedDistance; // [Phát thêm] Quãng đường đã lướt trong lượt hiện tại
-        private double _dashCooldownTimer;  // [Phát thêm] Bộ đếm thời gian hồi chiêu lướt
-        private double _ultDashedDistance; // [Phát thêm] Quãng đường đã lướt trong lượt tung chiêu cuối hiện tại
-        private double _hurtDuration = 0.3; // [Phát thêm] Thời gian bị choáng khi trúng đòn (mặc định 0.3s)
+        private double _attackCooldownTimer;     // [Phát thêm] Bộ đếm thời gian hồi sau khi chạy hết frame đánh (1 giây)
+        private int _lastAttackSteppedFrame = -1;// [Phát thêm] Ghi nhớ frame đánh vừa nhúc nhích để mỗi tư thế chỉ bước 1 lần
+        private double _dashedDistance;          // [Phát thêm] Quãng đường đã lướt trong lượt hiện tại
+        private double _dashCooldownTimer;       // [Phát thêm] Bộ đếm thời gian hồi chiêu lướt
+        private double _teleportCooldownTimer;   // [Phát thêm] Bộ đếm thời gian hồi chiêu tốc biến
+        private double _throwCooldownTimer;      // [Phát thêm] Bộ đếm thời gian hồi sau 2 lần ném phi tiêu liên tiếp (0.5s)
+        private double _throwComboResetTimer;    // [Phát thêm] Bộ đếm đặt lại chuỗi ném nếu chỉ ném 1 lần rồi nghỉ
+        private int _consecutiveThrows;          // [Phát thêm] Đếm số lần đã ném phi tiêu liên tiếp
+        private double _ultCooldownTimer;        // [Phát thêm] Bộ đếm thời gian hồi chiêu cuối (3 giây)
+        private double _ultDashedDistance;       // [Phát thêm] Quãng đường đã lướt trong lượt tung chiêu cuối hiện tại
+        private double _guardRegenTimer;         // [Phát thêm] Bộ đếm thời gian trễ trước khi hồi thanh chống đỡ
+        private double _hurtDuration = 0.3;      // [Phát thêm] Thời gian bị choáng khi trúng đòn (mặc định 0.3s)
+        private double _knockbackVelocity;       // [Phát thêm] Vận tốc đẩy lùi hiện tại (> 0 đẩy sang phải, < 0 đẩy sang trái)
+        private double _pendingKnockbackVelocity;// [Phát thêm] Vận tốc đẩy lùi chờ kích hoạt ở nhịp kết thúc chiêu cuối
+        private double _knockbackDelayTimer;     // [Phát thêm] Thời gian giữ đối phương đứng chịu đòn trước khi bật lùi
         private int _frame;
         private int _lastHitFrame = -1;
-        private bool _combo, _attackWasDown, _jumpWasDown, _throwWasDown, _ultWasDown, _dashWasDown, _hasThrown, _ultHasHit; // [Phát thêm] Thêm _dashWasDown chặn giữ phím lướt liên tục
+        private bool _combo, _attackWasDown, _jumpWasDown, _throwWasDown, _ultWasDown, _dashWasDown, _teleportWasDown, _hasThrown, _ultHasHit; // [Phát thêm] Thêm _dashWasDown và _teleportWasDown
         private string _currentFile = "";
 
         public Image Sprite { get; }
@@ -46,13 +77,17 @@ namespace BleachVsNarutoMini.Entities
         public int Hp { get; private set; } = 300;
         public double MaxChakra { get; } = 200;
         public double Chakra { get; private set; } = 200;
+        public double MaxGuard { get; } = MaxGuardValue;           // [Phát thêm] Giá trị tối đa thanh chống đỡ
+        public double Guard { get; private set; } = MaxGuardValue; // [Phát thêm] Giá trị hiện tại thanh chống đỡ
         public bool IsDead => Hp <= 0;
 
         public double StageWidth { get; set; } = 1024;
         public double GroundY { get; set; } = 620;
         public IReadOnlyList<Rect> Platforms { get; set; } = Array.Empty<Rect>();
+        public Fighter? Opponent { get; set; }           // [Phát thêm] Tham chiếu đối thủ để xác định vị trí sau lưng khi tốc biến
         public event Action<Projectile>? OnSpawnProjectile;
-        public event Action? OnNotEnoughChakra; // [Phát thêm] Sự kiện báo hiệu khi bấm chiêu lúc không đủ Chakra
+        public event Action<DustEffect>? OnSpawnEffect; // [Phát thêm] Sự kiện sinh hiệu ứng bụi/khói
+        public event Action? OnNotEnoughChakra;         // [Phát thêm] Sự kiện báo hiệu khi bấm chiêu lúc không đủ Chakra
 
         private double BodyW => Width * _cfg.BodyWidthRatio;
         private double BodyOffsetX => (Width - BodyW) / 2;
@@ -71,14 +106,14 @@ namespace BleachVsNarutoMini.Entities
             ? new Rect(BodyX + BodyW, BodyTop - 10, _cfg.UltimateReach, BodyH + 10)
             : new Rect(BodyX - _cfg.UltimateReach, BodyTop - 10, _cfg.UltimateReach, BodyH + 10);
 
-        // [Phát thêm] Bổ sung tham số Key dash vào constructor
+        // [Phát thêm] Bổ sung tham số Key dash và Key teleport vào constructor
         protected Fighter(double x, FighterConfig cfg,
-                          Key left, Key right, Key jump, Key attack, Key block, Key throwSkill, Key ult, Key dash)
+                          Key left, Key right, Key jump, Key attack, Key block, Key throwSkill, Key ult, Key dash, Key teleport = Key.None)
             : base(x, cfg.GroundBottom - cfg.Height + cfg.FootPadding, cfg.Width, cfg.Height, 260)
         {
             _cfg = cfg;
             _left = left; _right = right; _jump = jump; _attack = attack;
-            _block = block; _throw = throwSkill; _ult = ult; _dash = dash; // [Phát thêm] Gán phím lướt
+            _block = block; _throw = throwSkill; _ult = ult; _dash = dash; _teleport = teleport; // [Phát thêm] Gán phím lướt & tốc biến
 
             FacingRight = cfg.StartFacingRight;
             GroundY = cfg.GroundBottom;
@@ -86,36 +121,61 @@ namespace BleachVsNarutoMini.Entities
             Sprite = new Image { Width = Width, Height = Height, RenderTransform = _flip, RenderTransformOrigin = new Point(0.5, 0.5) };
             RenderOptions.SetBitmapScalingMode(Sprite, BitmapScalingMode.NearestNeighbor);
             SetImage(_cfg.Idle); Draw();
-
         }
+
         //[Nghĩa thêm] thêm Assign Player để chọn được nhân vật, bỏ mặc định Nar trái Sa phải
         public void AssignPlayer(int playerIndex, double spawnX)
         {
             if (playerIndex == 1)
             {
                 _left = Key.A; _right = Key.D; _jump = Key.K; _attack = Key.J;
-                _block = Key.S; _throw = Key.U; _ult = Key.I; _dash = Key.L;
+                _block = Key.S; _throw = Key.U; _ult = Key.I; _dash = Key.L; _teleport = Key.O; // [Phát thêm] Nút O tốc biến cho P1
             }
             else
             {
                 _left = Key.Left; _right = Key.Right; _jump = Key.D2; _attack = Key.D1;
-                _block = Key.Down; _throw = Key.D4; _ult = Key.D5; _dash = Key.D3;
+                _block = Key.Down; _throw = Key.D4; _ult = Key.D5; _dash = Key.D3; _teleport = Key.D6; // [Phát thêm] Nút 6 tốc biến cho P2
             }
 
             X = spawnX;
             FacingRight = playerIndex == 1;
             Draw();
         }
+
         public void UpdateLogic(double dt)
         {
             if (State == FighterState.Dead) { UpdateDead(dt); Draw(); return; }
 
+            // [Phát thêm] Cập nhật nhịp chờ đẩy lùi của chiêu cuối và lực trượt lùi
+            UpdateKnockback(dt);
+
             if (Chakra < MaxChakra && ChakraRegenPerSec > 0)
                 Chakra = Math.Min(MaxChakra, Chakra + ChakraRegenPerSec * dt);
 
-            // [Phát thêm] Giảm thời gian hồi chiêu của kỹ năng Lướt
+            // [Phát thêm] Giảm thời gian chờ hồi thanh chống đỡ và tự hồi khi không giữ nút đỡ
+            if (_guardRegenTimer > 0)
+                _guardRegenTimer = Math.Max(0, _guardRegenTimer - dt);
+            else if (State != FighterState.Block && Guard < MaxGuard && GuardRegenPerSec > 0)
+                Guard = Math.Min(MaxGuard, Guard + GuardRegenPerSec * dt);
+
+            // [Phát thêm] Giảm thời gian hồi chiêu của Đánh thường, Lướt, Tốc biến, Ném phi tiêu và Chiêu cuối
+            if (_attackCooldownTimer > 0)
+                _attackCooldownTimer = Math.Max(0, _attackCooldownTimer - dt);
             if (_dashCooldownTimer > 0)
                 _dashCooldownTimer = Math.Max(0, _dashCooldownTimer - dt);
+            if (_teleportCooldownTimer > 0)
+                _teleportCooldownTimer = Math.Max(0, _teleportCooldownTimer - dt);
+            if (_throwCooldownTimer > 0)
+                _throwCooldownTimer = Math.Max(0, _throwCooldownTimer - dt);
+            if (_ultCooldownTimer > 0)
+                _ultCooldownTimer = Math.Max(0, _ultCooldownTimer - dt);
+
+            // [Phát thêm] Nếu đã ném 1 lần nhưng đợi quá 0.5s không ném tiếp thì đặt lại bộ đếm về 0
+            if (State != FighterState.Throw && _consecutiveThrows > 0 && _throwCooldownTimer <= 0)
+            {
+                _throwComboResetTimer -= dt;
+                if (_throwComboResetTimer <= 0) _consecutiveThrows = 0;
+            }
 
             bool attackDown = InputManager.IsKeyDown(_attack);
             bool attackPressed = attackDown && !_attackWasDown;
@@ -125,7 +185,7 @@ namespace BleachVsNarutoMini.Entities
             bool jumpPressed = jumpDown && !_jumpWasDown;
             _jumpWasDown = jumpDown;
 
-            // [Phát thêm] Bắt nhịp nhấn từng lần đối với phím ném phi tiêu, chiêu cuối và lướt
+            // [Phát thêm] Bắt nhịp nhấn từng lần đối với phím ném phi tiêu, chiêu cuối, lướt và tốc biến
             bool throwDown = InputManager.IsKeyDown(_throw);
             bool throwPressed = throwDown && !_throwWasDown;
             _throwWasDown = throwDown;
@@ -138,22 +198,54 @@ namespace BleachVsNarutoMini.Entities
             bool dashPressed = dashDown && !_dashWasDown;
             _dashWasDown = dashDown;
 
+            bool teleportDown = InputManager.IsKeyDown(_teleport);
+            bool teleportPressed = teleportDown && !_teleportWasDown;
+            _teleportWasDown = teleportDown;
+
             int dir = (InputManager.IsKeyDown(_right) ? 1 : 0) - (InputManager.IsKeyDown(_left) ? 1 : 0);
+
+            // [Phát thêm] Kích hoạt Tốc biến (O/6) khi đứng, chạy, nhảy HOẶC đang thi triển Chiêu cuối (I/5) để đánh úp sau lưng
+            bool isUltTeleport = State == FighterState.Ultimate && !_ultHasHit;
+            bool canTeleport = State == FighterState.Idle || State == FighterState.Run || State == FighterState.Jump || isUltTeleport;
+            if (canTeleport && teleportPressed && _teleportCooldownTimer <= 0 && Opponent != null && !Opponent.IsDead)
+            {
+                if (TryUseChakra(TeleportChakraCost))
+                {
+                    _teleportCooldownTimer = TeleportCooldown;
+                    PerformTeleport(isUltTeleport);
+                    Draw();
+                    return;
+                }
+                else OnNotEnoughChakra?.Invoke();
+            }
 
             if (State == FighterState.Idle || State == FighterState.Run)
             {
-                if (InputManager.IsKeyDown(_block)) SetState(FighterState.Block);
+                // [Phát thêm] Chỉ cho đỡ đòn khi thanh chống đỡ còn điểm (Guard > 0)
+                if (InputManager.IsKeyDown(_block) && Guard > 0) SetState(FighterState.Block);
                 else if (InputManager.IsKeyDown(_ult))
                 {
-                    if (TryUseChakra(UltChakraCost)) SetState(FighterState.Ultimate);
-                    else if (ultPressed) OnNotEnoughChakra?.Invoke(); // [Phát thêm] Báo đỏ + rung thanh Chakra khi thiếu mana dùng chiêu cuối
+                    // [Phát thêm] Chỉ cho kích hoạt chiêu cuối khi đã hết 3 giây hồi chiêu
+                    if (_ultCooldownTimer <= 0)
+                    {
+                        if (TryUseChakra(UltChakraCost)) SetState(FighterState.Ultimate);
+                        else if (ultPressed) OnNotEnoughChakra?.Invoke(); // [Phát thêm] Báo đỏ + rung thanh Chakra khi thiếu mana dùng chiêu cuối
+                    }
                 }
                 else if (InputManager.IsKeyDown(_throw))
                 {
-                    if (TryUseChakra(ThrowChakraCost)) SetState(FighterState.Throw);
-                    else if (throwPressed) OnNotEnoughChakra?.Invoke(); // [Phát thêm] Báo đỏ + rung thanh Chakra khi thiếu mana ném phi tiêu
+                    // [Phát thêm] Chỉ cho ném phi tiêu khi chưa vượt quá 2 lần liên tiếp (đã hết 0.5s hồi chiêu)
+                    if (_throwCooldownTimer <= 0)
+                    {
+                        if (TryUseChakra(ThrowChakraCost))
+                        {
+                            _consecutiveThrows++;
+                            SetState(FighterState.Throw);
+                        }
+                        else if (throwPressed) OnNotEnoughChakra?.Invoke(); // [Phát thêm] Báo đỏ + rung thanh Chakra khi thiếu mana ném phi tiêu
+                    }
                 }
-                // [Phát thêm] Kích hoạt Lướt khi vừa bấm phím, đã hết hồi chiêu và đủ 10 chakra
+                // [Phát thêm] Kích hoạt Lướt khi đang đứng/chạy trên mặt đất (không cho lướt khi đang nhảy)
                 else if (dashPressed && _dashCooldownTimer <= 0)
                 {
                     if (TryUseChakra(DashChakraCost))
@@ -161,33 +253,30 @@ namespace BleachVsNarutoMini.Entities
                         if (dir != 0) FacingRight = dir > 0;
                         _dashCooldownTimer = DashCooldown;
                         SetState(FighterState.Dash);
+                        SpawnDustEffect(); // [Phát thêm] Tạo hiệu ứng bụi dưới chân khi lướt
                     }
                     else OnNotEnoughChakra?.Invoke();
                 }
-                else if (attackPressed) SetState(FighterState.Attack);
+                // [Phát thêm] Chỉ cho đánh tiếp sau khi hết 1 giây hồi chiêu của chuỗi đánh trước
+                else if (attackPressed && _attackCooldownTimer <= 0) SetState(FighterState.Attack);
                 else if (jumpPressed)
                 {
-                    if (TryUseChakra(JumpChakraCost)) { _vy = JumpPower; SetState(FighterState.Jump); }
+                    if (TryUseChakra(JumpChakraCost))
+                    {
+                        _vy = JumpPower;
+                        SetState(FighterState.Jump);
+                        SpawnDustEffect(); // [Phát thêm] Tạo hiệu ứng bụi dưới chân khi nhảy
+                    }
                     else OnNotEnoughChakra?.Invoke(); // [Phát thêm] Báo đỏ + rung thanh Chakra khi thiếu mana nhảy
                 }
             }
-            // [Phát thêm] Cho phép lướt trên không khi đang nhảy (vẫn tuân thủ hồi chiêu và tốn 10 chakra)
-            else if (State == FighterState.Jump && dashPressed && _dashCooldownTimer <= 0)
-            {
-                if (TryUseChakra(DashChakraCost))
-                {
-                    if (dir != 0) FacingRight = dir > 0;
-                    _dashCooldownTimer = DashCooldown;
-                    SetState(FighterState.Dash);
-                }
-                else OnNotEnoughChakra?.Invoke();
-            }
             else if (State == FighterState.Attack && attackPressed) _combo = true;
             // [Phát thêm] Báo thiếu Chakra nếu người chơi bấm chiêu trong lúc đang thực hiện động tác khác
-            else if ((ultPressed && Chakra < UltChakraCost) ||
-                     (throwPressed && Chakra < ThrowChakraCost) ||
+            else if ((ultPressed && _ultCooldownTimer <= 0 && Chakra < UltChakraCost) ||
+                     (throwPressed && _throwCooldownTimer <= 0 && Chakra < ThrowChakraCost) ||
                      (jumpPressed && Chakra < JumpChakraCost) ||
-                     (dashPressed && _dashCooldownTimer <= 0 && Chakra < DashChakraCost))
+                     (canTeleport && teleportPressed && _teleportCooldownTimer <= 0 && Chakra < TeleportChakraCost) ||
+                     (State != FighterState.Jump && dashPressed && _dashCooldownTimer <= 0 && Chakra < DashChakraCost))
             {
                 OnNotEnoughChakra?.Invoke();
             }
@@ -195,7 +284,7 @@ namespace BleachVsNarutoMini.Entities
             bool canMoveX = State == FighterState.Idle || State == FighterState.Run || State == FighterState.Jump;
             if (canMoveX && dir != 0)
             {
-                X = Math.Clamp(X + dir * Speed * dt, 20 - BodyOffsetX, StageWidth - 20 - BodyW - BodyOffsetX);
+                X = ClampStageX(X + dir * Speed * dt); // [Phát thêm] Giới hạn theo StageMargin để không chạm tường
                 FacingRight = dir > 0;
             }
 
@@ -216,9 +305,65 @@ namespace BleachVsNarutoMini.Entities
             Draw();
         }
 
+        // [Phát thêm] Tốc biến ra sau lưng đối thủ, thả khói 2 đầu và giữ nguyên Chiêu cuối nếu đang kết hợp I + O
+        private void PerformTeleport(bool keepUltimate = false)
+        {
+            if (Opponent == null) return;
+
+            // 1. Tạo làn khói ngay dưới chân tại vị trí cũ trước khi biến mất
+            SpawnDustEffect();
+
+            // 2. Tính tọa độ phía sau lưng đối thủ dựa theo hướng mặt đối thủ đang nhìn
+            double oppCenterX = Opponent.BodyX + Opponent.BodyW / 2;
+            double behindOffset = (Opponent.BodyW + BodyW) / 2 + 25;
+            double rawTargetX = Opponent.FacingRight
+                ? (oppCenterX - behindOffset - BodyW / 2)   // Đối thủ nhìn sang phải -> xuất hiện bên trái (sau lưng)
+                : (oppCenterX + behindOffset - BodyW / 2);  // Đối thủ nhìn sang trái -> xuất hiện bên phải (sau lưng)
+
+            X = ClampStageX(rawTargetX);
+
+            // 3. Đồng bộ độ cao với đối thủ và quay mặt về phía đối thủ
+            Y = Math.Min(GroundY - Height + _cfg.FootPadding, Opponent.FeetY - Height + _cfg.FootPadding);
+            double newCenterX = BodyX + BodyW / 2;
+            FacingRight = oppCenterX >= newCenterX;
+
+            // 4. Tạo làn khói ngay dưới chân tại vị trí mới vừa xuất hiện
+            SpawnDustEffect();
+
+            // 5. Nếu đang dùng Chiêu cuối (I/5), nhảy thẳng sang frame tung chiêu để đánh trúng ngay sau lưng đối thủ
+            if (keepUltimate)
+            {
+                int chargeFrames = _cfg.UltimateChargeFrames > 0 ? _cfg.UltimateChargeFrames : _cfg.UltimateFrames / 2;
+                if (_frame < chargeFrames)
+                {
+                    _frame = chargeFrames;
+                    _timer = 0;
+                }
+                _ultDashedDistance = 0;
+                return;
+            }
+
+            // 6. Tốc biến thường: đặt lại trạng thái đứng/rơi mượt mà
+            _vy = 0;
+            SetState(IsStandingOnSurface() ? FighterState.Idle : FighterState.Jump);
+        }
+
+        // [Phát thêm] Giới hạn tọa độ X theo StageMargin để nhân vật dừng sát mép tường trong của bản đồ
+        private double ClampStageX(double nextX) =>
+            Math.Clamp(nextX, StageMargin - BodyOffsetX, StageWidth - StageMargin - BodyW - BodyOffsetX);
+
+        // [Phát thêm] Tạo đám bụi/khói ngay dưới chân nhân vật tại thời điểm nhảy, lướt hoặc tốc biến
+        private void SpawnDustEffect()
+        {
+            double footCenterX = BodyX + BodyW / 2;
+            OnSpawnEffect?.Invoke(new DustEffect(footCenterX, FeetY));
+        }
+
         public void TryHit(Fighter target)
         {
             if (target.IsDead) return;
+
+            double myCenterX = BodyX + BodyW / 2; // [Phát thêm] Tọa độ tâm của người tấn công để tính hướng đẩy lùi
 
             // Đòn đánh thường và combo
             if (State == FighterState.Attack)
@@ -228,7 +373,7 @@ namespace BleachVsNarutoMini.Entities
 
                 if (AttackBox.IntersectsWith(target.Bounds))
                 {
-                    target.TakeDamage(_cfg.AttackDamage); // [Phát thêm] Lấy dame đánh thường riêng của từng nhân vật
+                    target.TakeDamage(_cfg.AttackDamage, 0.3, myCenterX); // [Phát thêm] Lấy dame đánh thường riêng và truyền hướng va chạm
                     _lastHitFrame = _frame;
                 }
             }
@@ -242,23 +387,130 @@ namespace BleachVsNarutoMini.Entities
                 {
                     // [Phát thêm] Giữ đối phương choáng cho đến khi người tung chiêu hoàn tất toàn bộ hoạt ảnh chiêu cuối
                     double remainingUltTime = Math.Max(0.4, (_cfg.UltimateFrames - _frame) * 0.08 + 0.1);
-                    target.TakeDamage(_cfg.UltimateDamage, remainingUltTime);
+                    target.TakeDamage(_cfg.UltimateDamage, remainingUltTime, myCenterX);
                     _ultHasHit = true; // [Phát thêm] Đánh dấu đã trúng để dừng lướt ngay trước mặt đối phương và không gây dame lặp lại
                 }
             }
         }
 
-        // [Phát thêm] Bổ sung tham số stunDuration (mặc định 0.3s) để chiêu cuối làm choáng lâu hơn đòn thường
-        public void TakeDamage(int amount, double stunDuration = 0.3)
+        // [Phát thêm] Xử lý đỡ đòn (chỉ đỡ phía trước; bị đánh sau lưng sẽ xuyên đỡ, tự xoay mặt và bật lùi)
+        public void TakeDamage(int amount, double stunDuration = 0.3, double? sourceX = null)
         {
-            if (State == FighterState.Block || IsDead) return;
+            if (IsDead) return;
+
+            double myCenterX = BodyX + BodyW / 2;
+            double? attackerCenterX = sourceX ?? (Opponent != null ? Opponent.BodyX + Opponent.BodyW / 2 : null);
+
+            // [Phát thêm] Kiểm tra xem đòn đánh có đến từ phía sau lưng hay không
+            bool isHitFromBehind = attackerCenterX.HasValue &&
+                ((FacingRight && attackerCenterX.Value < myCenterX) ||
+                 (!FacingRight && attackerCenterX.Value > myCenterX));
+
+            // Chỉ đỡ được đòn khi đang giữ thế đỡ, còn điểm chống đỡ và đòn đánh đến từ phía trước mặt
+            if (State == FighterState.Block && Guard > 0 && !isHitFromBehind)
+            {
+                _guardRegenTimer = GuardRegenDelay;
+
+                if (Guard >= amount)
+                {
+                    // Thanh chống đỡ đủ sức chặn toàn bộ đòn đánh
+                    Guard -= amount;
+                    if (Guard <= 0)
+                    {
+                        Guard = 0;
+                        ApplyKnockback(attackerCenterX, myCenterX, HitKnockbackSpeed * 0.8);
+                        SetState(FighterState.Hurt);
+                        _hurtDuration = 0.25; // Vỡ chống đỡ gây choáng nhẹ
+                    }
+                    return;
+                }
+                else
+                {
+                    // Thanh chống đỡ gần hết: hấp thụ phần sát thương bằng số điểm còn lại, phần dư trừ vào máu
+                    int remainingDamage = (int)Math.Ceiling(amount - Guard);
+                    Guard = 0;
+                    amount = remainingDamage;
+                }
+            }
+
             Hp = Math.Max(0, Hp - amount);
-            if (Hp == 0) SetState(FighterState.Dead);
+            if (Hp == 0)
+            {
+                ApplyKnockback(attackerCenterX, myCenterX, UltKnockbackSpeed);
+                SetState(FighterState.Dead);
+                return;
+            }
+
+            // [Phát thêm] Nếu nhân vật đang tung Chiêu cuối thì không bị ngắt chiêu hay bật lùi giữa chừng
+            if (State == FighterState.Ultimate) return;
+
+            // [Phát thêm] Nếu trúng Chiêu cuối: giữ đối phương đứng chịu đòn đến frame cuối mới bật văng lùi về sau
+            bool isUltimateHit = stunDuration > 0.35;
+            double knockSpeed = isUltimateHit ? UltKnockbackSpeed : HitKnockbackSpeed;
+            double delayBeforeKnock = isUltimateHit ? Math.Max(0, stunDuration - 0.12) : 0;
+            ApplyKnockback(attackerCenterX, myCenterX, knockSpeed, delayBeforeKnock);
+
+            SetState(FighterState.Hurt);
+            _hurtDuration = stunDuration; // [Phát thêm] Gán thời gian choáng tương ứng với chiêu thức vừa trúng
+        }
+
+        // [Phát thêm] Quay mặt nhân vật về phía nguồn sát thương và đặt vận tốc đẩy lùi ngược hướng đối phương
+        private void ApplyKnockback(double? attackerCenterX, double myCenterX, double speed, double delay = 0)
+        {
+            double velocity;
+            if (attackerCenterX.HasValue && Math.Abs(attackerCenterX.Value - myCenterX) > 1)
+            {
+                bool attackerOnRight = attackerCenterX.Value > myCenterX;
+                FacingRight = attackerOnRight;                 // Tự động xoay về hướng đối phương
+                velocity = attackerOnRight ? -speed : speed;   // Bật lùi về phía sau lưng nhân vật
+            }
             else
             {
-                SetState(FighterState.Hurt);
-                _hurtDuration = stunDuration; // [Phát thêm] Gán thời gian choáng tương ứng với chiêu thức vừa trúng
+                velocity = FacingRight ? -speed : speed;
             }
+
+            if (delay > 0)
+            {
+                _knockbackVelocity = 0;
+                _pendingKnockbackVelocity = velocity;
+                _knockbackDelayTimer = delay;
+            }
+            else
+            {
+                _knockbackVelocity = velocity;
+                _pendingKnockbackVelocity = 0;
+                _knockbackDelayTimer = 0;
+            }
+        }
+
+        // [Phát thêm] Cập nhật nhịp chờ bật lùi cuối chiêu và quãng đường trượt lùi theo ma sát
+        private void UpdateKnockback(double dt)
+        {
+            if (_knockbackDelayTimer > 0)
+            {
+                _knockbackDelayTimer -= dt;
+                if (_knockbackDelayTimer <= 0)
+                {
+                    _knockbackDelayTimer = 0;
+                    _knockbackVelocity = _pendingKnockbackVelocity;
+                    _pendingKnockbackVelocity = 0;
+                }
+                return;
+            }
+
+            if (Math.Abs(_knockbackVelocity) <= 0.1)
+            {
+                _knockbackVelocity = 0;
+                return;
+            }
+
+            X = ClampStageX(X + _knockbackVelocity * dt);
+
+            double decel = KnockbackFriction * dt;
+            if (Math.Abs(_knockbackVelocity) <= decel)
+                _knockbackVelocity = 0;
+            else
+                _knockbackVelocity -= Math.Sign(_knockbackVelocity) * decel;
         }
 
         private bool IsStandingOnSurface() => Math.Abs(FeetY - GroundY) <= 2;
@@ -290,7 +542,7 @@ namespace BleachVsNarutoMini.Entities
         {
             double dashDir = FacingRight ? 1 : -1;
             double step = Math.Min(DashSpeed * dt, DashDistance - _dashedDistance); // [Phát thêm] Không lướt vượt quá DashDistance
-            X = Math.Clamp(X + dashDir * step, 20 - BodyOffsetX, StageWidth - 20 - BodyW - BodyOffsetX);
+            X = ClampStageX(X + dashDir * step); // [Phát thêm] Giới hạn theo StageMargin để không lướt xuyên tường
             _dashedDistance += step; // [Phát thêm] Cộng dồn quãng đường đã lướt
 
             SetImage($"{_cfg.RunPrefix}{_cfg.RunStart + _frame}.png");
@@ -305,9 +557,21 @@ namespace BleachVsNarutoMini.Entities
 
         private void UpdateAttack(double dt)
         {
+            // [Phát thêm] Mỗi khi chuyển sang tư thế (frame) đánh mới thì nhúc nhích tiến lên phía trước một chút
+            if (_frame != _lastAttackSteppedFrame)
+            {
+                _lastAttackSteppedFrame = _frame;
+                double stepDir = FacingRight ? 1 : -1;
+                X = ClampStageX(X + stepDir * AttackStepDistance);
+            }
+
             int total = _combo ? _cfg.AttackFrames : _cfg.ComboSplitFrame;
             SetImage($"{_cfg.AttackPrefix}{_frame + 1}.png");
-            if (Advance(total, _cfg.AttackFrameTime, false, dt)) SetState(FighterState.Idle);
+            if (Advance(total, _cfg.AttackFrameTime, false, dt))
+            {
+                _attackCooldownTimer = AttackCooldown; // [Phát thêm] Chạy hết frame đánh thì đợi 1 giây mới được đánh tiếp
+                SetState(FighterState.Idle);
+            }
         }
 
         private void UpdateThrow(double dt)
@@ -336,7 +600,7 @@ namespace BleachVsNarutoMini.Entities
             {
                 double dir = FacingRight ? 1 : -1;
                 double step = Math.Min(_cfg.UltimateDashSpeed * dt, _cfg.UltimateDashDistance - _ultDashedDistance);
-                X = Math.Clamp(X + dir * step, 20 - BodyOffsetX, StageWidth - 20 - BodyW - BodyOffsetX);
+                X = ClampStageX(X + dir * step); // [Phát thêm] Giới hạn theo StageMargin để không lao xuyên tường
                 _ultDashedDistance += step;
             }
 
@@ -345,8 +609,13 @@ namespace BleachVsNarutoMini.Entities
 
         private void UpdateBlock()
         {
+            // [Phát thêm] Cho phép xoay hướng đỡ trái/phải trong lúc đang giữ nút đỡ
+            int dir = (InputManager.IsKeyDown(_right) ? 1 : 0) - (InputManager.IsKeyDown(_left) ? 1 : 0);
+            if (dir != 0) FacingRight = dir > 0;
+
             SetImage(_cfg.BlockImage);
-            if (!InputManager.IsKeyDown(_block)) SetState(FighterState.Idle);
+            // [Phát thêm] Nhả nút đỡ hoặc hết thanh chống đỡ sẽ thoát trạng thái phòng thủ
+            if (!InputManager.IsKeyDown(_block) || Guard <= 0) SetState(FighterState.Idle);
         }
 
         private void UpdateHurt(double dt)
@@ -358,6 +627,7 @@ namespace BleachVsNarutoMini.Entities
 
         private void UpdateDead(double dt)
         {
+            UpdateKnockback(dt); // [Phát thêm] Nhân vật bật lùi về sau khi dính đòn kết liễu
             if (FeetY < GroundY) { _vy += Gravity * dt; Y += _vy * dt; }
             else Y = GroundY - Height + _cfg.FootPadding;
 
@@ -381,7 +651,33 @@ namespace BleachVsNarutoMini.Entities
 
         private void SetState(FighterState s)
         {
-            State = s; _frame = 0; _timer = 0; _lastHitFrame = -1; _combo = false;
+            // [Phát thêm] Khi kết thúc (hoặc rời khỏi) trạng thái Chiêu cuối, bắt đầu tính thời gian hồi 3 giây
+            if (State == FighterState.Ultimate && s != FighterState.Ultimate)
+                _ultCooldownTimer = UltCooldown;
+
+            // [Phát thêm] Khi kết thúc động tác ném phi tiêu: đủ 2 lần liên tiếp thì khóa 0.5s, chưa đủ thì mở cửa sổ 0.5s để nối lần 2
+            if (State == FighterState.Throw && s != FighterState.Throw)
+            {
+                if (_consecutiveThrows >= MaxConsecutiveThrows)
+                {
+                    _throwCooldownTimer = ThrowCooldown;
+                    _consecutiveThrows = 0;
+                }
+                else
+                {
+                    _throwComboResetTimer = ThrowCooldown;
+                }
+            }
+
+            // [Phát thêm] Xóa vận tốc đẩy lùi khi chủ động lướt hoặc bắt đầu trạng thái mới (giữ lại quán tính trượt cuối chiêu khi chuyển về Idle)
+            if (s == FighterState.Dash || s == FighterState.Ultimate)
+            {
+                _knockbackVelocity = 0;
+                _pendingKnockbackVelocity = 0;
+                _knockbackDelayTimer = 0;
+            }
+
+            State = s; _frame = 0; _timer = 0; _lastHitFrame = -1; _lastAttackSteppedFrame = -1; _combo = false;
             _hasThrown = false;
             _ultHasHit = false; // [Phát thêm] Đặt lại cờ trúng đòn của chiêu cuối
             _ultDashedDistance = 0; // [Phát thêm] Đặt lại quãng đường lướt của chiêu cuối

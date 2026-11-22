@@ -53,8 +53,8 @@ namespace BleachVsNarutoMini.Entities
             StartFacingRight = true
         };
 
-        // Gán phím: Trái(A), Phải(D), Nhảy(K), Đánh(J), Đỡ(S), Phi tiêu(U), Chiêu cuối(I), Lướt(L)
-        // [Phát thêm] Truyền thêm Key.L làm nút lướt của Naruto
-        public Naruto() : base(100, Config, Key.A, Key.D, Key.K, Key.J, Key.S, Key.U, Key.I, Key.L) { }
+        // Gán phím: Trái(A), Phải(D), Nhảy(K), Đánh(J), Đỡ(S), Phi tiêu(U), Chiêu cuối(I), Lướt(L), Tốc biến(O)
+        // [Phát thêm] Truyền thêm Key.L làm nút lướt và Key.O làm nút tốc biến của Naruto
+        public Naruto() : base(100, Config, Key.A, Key.D, Key.K, Key.J, Key.S, Key.U, Key.I, Key.L, Key.O) { }
     }
 }
