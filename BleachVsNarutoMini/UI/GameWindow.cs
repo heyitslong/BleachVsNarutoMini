@@ -170,7 +170,7 @@ namespace BleachVsNarutoMini.UI
 
             // [MỚI] Thanh chakra
             UpdateChakra(player1.Chakra, player2.Chakra, player1.MaxChakra);
-            UpdateGuard(player1.Guard, player2.Guard, player1.MaxGuard); // [Phát thêm] Cập nhật thanh chống đỡ
+            UpdateGuard(player1.Guard, player2.Guard, player1.MaxGuard, player1.ShowGuardBar, player2.ShowGuardBar); // [Phát thêm] Cập nhật thanh chống đỡ
 
 
             // [MỚI] Đồng hồ đếm ngược (tính theo dt nên dừng game là đồng hồ dừng theo)
@@ -346,9 +346,9 @@ namespace BleachVsNarutoMini.UI
             Hud.SetChakra(p1Chakra, p2Chakra, maxChakra);
         }
         // [Phát thêm] Cập nhật thanh chống đỡ
-        public void UpdateGuard(double p1Guard, double p2Guard, double maxGuard = 45)
+        public void UpdateGuard(double p1Guard, double p2Guard, double maxGuard = 45, bool showP1 = false, bool showP2 = false)
         {
-            Hud.SetGuard(p1Guard, p2Guard, maxGuard);
+            Hud.SetGuard(p1Guard, p2Guard, maxGuard, showP1, showP2);
         }
 
         private void StartDemo()

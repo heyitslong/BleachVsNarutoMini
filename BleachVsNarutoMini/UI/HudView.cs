@@ -19,8 +19,8 @@ namespace BleachVsNarutoMini.UI
             _bar = new ProgressBar
             {
                 Minimum = 0,
-                Maximum = 45,
-                Value = 45,
+                Maximum = 100,
+                Value = 100,
                 Background = new SolidColorBrush(Color.FromRgb(0x33, 0x33, 0x33)),
                 Foreground = new SolidColorBrush(Color.FromRgb(0x4C, 0xAF, 0x50)),
                 BorderBrush = Brushes.Black,
@@ -130,7 +130,7 @@ namespace BleachVsNarutoMini.UI
         }
     }
 
-    // [Phát thêm] Thanh chống đỡ màu trắng hơi trong suốt, rộng bằng 1/3 thanh Chakra
+    // [Phát thêm] Thanh chống đỡ màu trắng hơi trong suốt, rộng bằng 1/3 thanh Chakra, mặc định ẩn khi chưa bị đánh trúng thế đỡ
     public class GuardBar : Border
     {
         private readonly ProgressBar _bar;
@@ -142,12 +142,13 @@ namespace BleachVsNarutoMini.UI
             HorizontalAlignment = rightToLeft ? HorizontalAlignment.Right : HorizontalAlignment.Left;
             BorderBrush = new SolidColorBrush(Color.FromArgb(0x88, 0x00, 0x00, 0x00));
             BorderThickness = new Thickness(1);
+            Visibility = Visibility.Hidden; // [Phát thêm] Mặc định ẩn thanh chống đỡ
 
             _bar = new ProgressBar
             {
                 Minimum = 0,
-                Maximum = 30,
-                Value = 30,
+                Maximum = 45,
+                Value = 45,
                 Background = new SolidColorBrush(Color.FromArgb(0x45, 0x00, 0x00, 0x00)),
                 Foreground = new SolidColorBrush(Color.FromArgb(0xB8, 0xFF, 0xFF, 0xFF)), // [Phát thêm] Màu trắng hơi trong suốt
                 BorderThickness = new Thickness(0),
@@ -275,9 +276,11 @@ namespace BleachVsNarutoMini.UI
             _p2Chakra.SetValue(p2Chakra, maxChakra);
         }
 
-        // [Phát thêm] Cập nhật giá trị thanh chống đỡ của 2 người chơi (tối đa 45)
-        public void SetGuard(double p1Guard, double p2Guard, double maxGuard = 45)
+        // [Phát thêm] Chỉ hiện thanh chống đỡ khi nhân vật đang đỡ và bị đánh trúng (tối đa 45)
+        public void SetGuard(double p1Guard, double p2Guard, double maxGuard = 45, bool showP1 = false, bool showP2 = false)
         {
+            _p1Guard.Visibility = showP1 ? Visibility.Visible : Visibility.Hidden;
+            _p2Guard.Visibility = showP2 ? Visibility.Visible : Visibility.Hidden;
             _p1Guard.SetValue(p1Guard, maxGuard);
             _p2Guard.SetValue(p2Guard, maxGuard);
         }
@@ -289,12 +292,14 @@ namespace BleachVsNarutoMini.UI
                 ? new SolidColorBrush(Color.FromRgb(0xFF, 0x52, 0x52))
                 : Brushes.White;
         }
+
         //Nghĩa thêm, settimeinfinite để tính thời gian vô hạn
         public void SetTimeInfinite()
         {
             _timeText.Text = "∞";
             _timeText.Foreground = Brushes.White;
         }
+
         // [Phát thêm] Gọi hiệu ứng nháy đỏ và rung thanh Chakra của người chơi tương ứng
         public void WarnLowChakra(int playerIndex)
         {
