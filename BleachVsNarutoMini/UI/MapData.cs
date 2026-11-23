@@ -60,12 +60,6 @@ namespace BleachVsNarutoMini.UI
             };
 
             AddBorderWalls(map.Obstacles, 20);
-
-            map.Obstacles.Add(new Rect(472, 270, 80, 100));   // hộp lớn ở giữa
-            map.Obstacles.Add(new Rect(200, 150, 100, 40));   // 4 hộp nhỏ đối xứng
-            map.Obstacles.Add(new Rect(724, 150, 100, 40));
-            map.Obstacles.Add(new Rect(200, 450, 100, 40));
-            map.Obstacles.Add(new Rect(724, 450, 100, 40));
             return map;
         }
 
@@ -85,12 +79,6 @@ namespace BleachVsNarutoMini.UI
             };
 
             AddBorderWalls(map.Obstacles, 20);
-
-            map.Obstacles.Add(new Rect(300, 20, 40, 200));    // 4 cột đối xứng
-            map.Obstacles.Add(new Rect(684, 20, 40, 200));
-            map.Obstacles.Add(new Rect(300, 420, 40, 200));
-            map.Obstacles.Add(new Rect(684, 420, 40, 200));
-            map.Obstacles.Add(new Rect(432, 300, 160, 40));   // thanh ngang ở giữa
             return map;
         }
 

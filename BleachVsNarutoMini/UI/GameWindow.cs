@@ -249,11 +249,12 @@ namespace BleachVsNarutoMini.UI
             _shownHp2 = -1;
             _timeLeft = MatchSeconds;
             _shownTime = MatchSeconds;
-            Hud.SetTime(MatchSeconds);
+            if (MatchSeconds > 0) Hud.SetTime(MatchSeconds);
+            else Hud.SetTimeInfinite();      // chế độ vô hạn: hiện ∞
 
             if (GameStarted != null) GameStarted(SelectedP1, SelectedP2, SelectedMap);   // [SỬA]
 
-            // === ĐƯA NHÂN VẬT LÊN VÕ ĐÀI ===
+            //  ĐƯA NHÂN VẬT LÊN VÕ ĐÀI 
             // [SỬA] Tạo nhân vật theo lựa chọn (xem hàm CreateFighter bên dưới)
             player1 = CreateFighter(SelectedP1);
             player2 = CreateFighter(SelectedP2);
