@@ -284,20 +284,17 @@ namespace BleachVsNarutoMini.UI
 
         public void SetTime(int seconds)
         {
-            // [Phát thêm] Hiển thị ký hiệu vô cực ∞ khi chọn chế độ Vô hạn (seconds < 0)
-            if (seconds < 0)
-            {
-                _timeText.Text = "∞";
-                _timeText.Foreground = Brushes.White;
-                return;
-            }
-
             _timeText.Text = seconds.ToString();
             _timeText.Foreground = seconds <= 10
                 ? new SolidColorBrush(Color.FromRgb(0xFF, 0x52, 0x52))
                 : Brushes.White;
         }
-
+        //Nghĩa thêm, settimeinfinite để tính thời gian vô hạn
+        public void SetTimeInfinite()
+        {
+            _timeText.Text = "∞";
+            _timeText.Foreground = Brushes.White;
+        }
         // [Phát thêm] Gọi hiệu ứng nháy đỏ và rung thanh Chakra của người chơi tương ứng
         public void WarnLowChakra(int playerIndex)
         {
