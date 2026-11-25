@@ -64,9 +64,9 @@ namespace BleachVsNarutoMini.Entities
             Draw();
 
             if (X < -Width || X > stageWidth + Width) { IsActive = false; return; }
-            if (!target.IsDead && Bounds.IntersectsWith(target.Bounds))
+            if (!target.IsDead && target.State != FighterState.Knockdown && target.State != FighterState.GetUp && Bounds.IntersectsWith(target.Bounds))
             {
-                target.TakeDamage(Damage, _knockdown ? 0.5 : 0.3, _knockdown);
+                target.TakeDamage(Damage, _knockdown ? 0.5 : 0.3, _knockdown, X + Width / 2);
                 IsActive = false;
             }
         }

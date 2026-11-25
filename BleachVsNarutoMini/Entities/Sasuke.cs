@@ -24,11 +24,18 @@ namespace BleachVsNarutoMini.Entities
             Special1ProjectileFrames = 10,
             Special1SpawnFrame = 8,
 
-            Special2 = new AnimClip { Prefix = "Sasuke/dungchieudacbiet/sasukedacbiet", Start = 1, Frames = 23, FrameTime = 0.06 },
+            Special2 = new AnimClip { Prefix = "Sasuke/chieudacbiet/sasukedacbiet", Start = 1, Frames = 23, FrameTime = 0.06 },
             Ultimate = new AnimClip { Prefix = "Sasuke/chidori/sasukechidori", Start = 1, Frames = 54, FrameTime = 0.06 },
 
             Hurt = new AnimClip { Prefix = "Sasuke/bidanh/sasukenga", Start = 2, Frames = 2, FrameTime = 0.10 },
-            Knockdown = new AnimClip { Prefix = "Sasuke/khibidanhlientiep/sasukenga", Start = 2, Frames = 6, FrameTime = 0.10 },
+            Knockdown = new AnimClip
+            {
+                Prefix = "Sasuke/bidanhlientiep/sasukenga",
+                Start = 2,
+                Frames = 6,
+                FrameTime = 0.11,
+                FrameOffsetsY = new double[] { 0, 0, 19, 20, 20, 20 } // Thu nhỏ theo tỷ lệ 85%
+            },
             GetUp = new AnimClip
             {
                 CustomFiles = new[]
@@ -64,24 +71,24 @@ namespace BleachVsNarutoMini.Entities
                 Loop = true
             },
             AttackDamage = 6,
-            CrouchAttackDamage = 12,
-            JumpAttackDamage = 8,
-            ThrowDamage = 18,
-            Special1Damage = 25,
-            Special2Damage = 28,
-            UltimateDamage = 32,
-            UltimateReach = 30,
+            CrouchAttackDamage = 11,
+            JumpAttackDamage = 9,
+            ThrowDamage = 10,
+            Special1Damage = 24,
+            Special2Damage = 27,
+            UltimateDamage = 60,
+            UltimateReach = 40,
 
             UltimateChargeFrames = 20,
             UltimateDashSpeed = 1150,
             UltimateDashDistance = 460,
 
-            Width = 100,
-            Height = 110,
+            Width = 87,             // Giảm từ 100 xuống 85
+            Height = 94,            // Giảm từ 110 xuống 94
             BodyWidthRatio = 0.5,
-            AttackReach = 25,
+            AttackReach = 22,
             GroundBottom = 620,
-            FootPadding = 21,
+            FootPadding = 7.3,        // Giảm nhẹ từ 8 xuống 7
             StartFacingRight = false
         };
 

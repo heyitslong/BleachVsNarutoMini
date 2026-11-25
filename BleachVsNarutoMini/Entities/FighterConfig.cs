@@ -18,7 +18,7 @@ namespace BleachVsNarutoMini.Entities
         public int Frames { get; init; } = 0;
         public double FrameTime { get; init; } = 0.08;
         public string[]? CustomFiles { get; init; }
-
+        public double[]? FrameOffsetsY { get; init; } // [Phát thêm] Độ dịch chuyển trục Y riêng cho từng frame (> 0 hạ thấp xuống)
         public int Count => CustomFiles != null ? CustomFiles.Length : Frames;
         public bool HasFrames => Count > 0 && (CustomFiles != null || !string.IsNullOrEmpty(Prefix));
 
@@ -28,6 +28,14 @@ namespace BleachVsNarutoMini.Entities
             if (CustomFiles != null) return CustomFiles[idx];
             if (Frames == 1 && Prefix.EndsWith(".png", StringComparison.OrdinalIgnoreCase)) return Prefix;
             return $"{Prefix}{Start + idx}.png";
+        }
+
+        // [Phát thêm] Lấy độ bù tọa độ Y của frame hiện tại (mặc định bằng 0)
+        public double GetOffsetY(int frameIndex)
+        {
+            if (FrameOffsetsY == null || FrameOffsetsY.Length == 0) return 0;
+            int idx = Math.Clamp(frameIndex, 0, FrameOffsetsY.Length - 1);
+            return FrameOffsetsY[idx];
         }
     }
 
@@ -58,6 +66,8 @@ namespace BleachVsNarutoMini.Entities
         public double GroundBottom { get; init; } = 620;
         public bool StartFacingRight { get; init; } = true;
         public double FootPadding { get; init; } = 15;
+        public double KnockdownFootPadding { get; init; } = 32; // [Phát thêm] Độ hạ thấp khung hình khi nhân vật nằm ngã/gục
+
 
         // Sát thương và tầm đánh
         public int AttackDamage { get; init; } = 5;

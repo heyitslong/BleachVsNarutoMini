@@ -27,10 +27,10 @@ namespace BleachVsNarutoMini.Entities
         public Image Sprite { get; }
         public bool IsFinished { get; private set; }
 
-        // Constructor cũ giữ nguyên để tương thích code sẵn có
-        public DustEffect(double centerX, double targetY, bool isCenterY = false)
+        // [Phát thêm] Tăng kích thước bụi mặc định (220x76) và hỗ trợ scale để phóng to riêng khi đập mạnh xuống đất
+        public DustEffect(double centerX, double targetY, bool isCenterY = false, double scale = 1.0)
             : this("Assets/effect/khiNhanVatChayNhanh/bui", 1, 7, 0.05,
-                   centerX, targetY, 160, 55, isCenterY, 20, true, 0,
+                   centerX, targetY, 220 * scale, 76 * scale, isCenterY, 24 * scale, true, 0,
                    null, FighterState.Idle, 0, 0, false)
         {
         }
