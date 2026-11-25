@@ -1,57 +1,109 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+
 namespace BleachVsNarutoMini.Entities
 {
-    // [Phát thêm] Bổ sung trạng thái Dash (Lướt)
-    public enum FighterState { Idle, Run, Attack, Jump, Block, Throw, Ultimate, Dash, Hurt, Dead }
+    public enum FighterState
+    {
+        Idle, Run, Jump, Dash, Block,
+        Attack, JumpAttack, CrouchAttack,
+        Throw, JumpThrow,
+        Special1, Special2, Ultimate,
+        Hurt, Knockdown, GetUp, Dead
+    }
 
+    public class AnimClip
+    {
+        public string Prefix { get; init; } = "";
+        public int Start { get; init; } = 1;
+        public int Frames { get; init; } = 0;
+        public double FrameTime { get; init; } = 0.08;
+        public string[]? CustomFiles { get; init; }
+
+        public int Count => CustomFiles != null ? CustomFiles.Length : Frames;
+        public bool HasFrames => Count > 0 && (CustomFiles != null || !string.IsNullOrEmpty(Prefix));
+
+        public string GetFile(int frameIndex)
+        {
+            int idx = Math.Clamp(frameIndex, 0, Math.Max(0, Count - 1));
+            if (CustomFiles != null) return CustomFiles[idx];
+            if (Frames == 1 && Prefix.EndsWith(".png", StringComparison.OrdinalIgnoreCase)) return Prefix;
+            return $"{Prefix}{Start + idx}.png";
+        }
+    }
+
+    public class EffectConfig
+    {
+        public string Prefix { get; init; } = "";
+        public int Start { get; init; } = 1;
+        public int Frames { get; init; } = 0;
+        public double FrameTime { get; init; } = 0.05;
+        public double Width { get; init; } = 120;
+        public double Height { get; init; } = 120;
+        public bool IsCenterY { get; init; } = true;
+        public double GroundOffsetY { get; init; } = 20;
+        public double OffsetX { get; init; } = 0;
+        public double OffsetY { get; init; } = 0;
+        public int ZIndex { get; init; } = 0;
+        public bool FollowOwner { get; init; } = false;
+        public bool Loop { get; init; } = false;
+
+        public bool HasFrames => Frames > 0 && !string.IsNullOrEmpty(Prefix);
+    }
     public class FighterConfig
     {
-        public double BodyWidthRatio { get; init; } = 0.4;
-        public double AttackReach { get; init; } = 30;
-        public double Width { get; init; } = 150;
-        public double Height { get; init; } = 150;
-        public double GroundBottom { get; init; } = 330;
+        public double BodyWidthRatio { get; init; } = 0.5;
+        public double AttackReach { get; init; } = 25;
+        public double Width { get; init; } = 100;
+        public double Height { get; init; } = 110;
+        public double GroundBottom { get; init; } = 620;
         public bool StartFacingRight { get; init; } = true;
-        public double FootPadding { get; init; } = 0;
+        public double FootPadding { get; init; } = 15;
 
-        // [Phát thêm] Cấu hình sát thương và tầm đánh chiêu cuối riêng cho từng nhân vật
+        // Sát thương và tầm đánh
         public int AttackDamage { get; init; } = 5;
+        public int CrouchAttackDamage { get; init; } = 10;
+        public int JumpAttackDamage { get; init; } = 8;
         public int ThrowDamage { get; init; } = 15;
+        public int Special1Damage { get; init; } = 22;
+        public int Special2Damage { get; init; } = 28;
         public int UltimateDamage { get; init; } = 35;
         public double UltimateReach { get; init; } = 35;
 
-        // [Phát thêm] Cấu hình gồng chiêu và lướt áp sát khi dùng chiêu cuối
-        public int UltimateChargeFrames { get; init; } = 0; // Số frame đứng gồng trước khi lao tới (0 = mặc định một nửa số frame)
-        public double UltimateDashSpeed { get; init; } = 950; // Tốc độ lao tới áp sát (pixel/giây)
-        public double UltimateDashDistance { get; init; } = 420; // Khoảng cách lướt tối đa nếu đối phương né được
+        // Thông số lao tới khi dùng Chiêu cuối
+        public int UltimateChargeFrames { get; init; } = 16;
+        public double UltimateDashSpeed { get; init; } = 950;
+        public double UltimateDashDistance { get; init; } = 420;
 
-        public string Idle { get; init; } = "";
+        // Nhịp ngắt combo đánh thường
+        public int ComboSplitFrame { get; init; } = 5;
 
-        public string RunPrefix { get; init; } = "";
-        public int RunStart { get; init; } = 1;
-        public int RunFrames { get; init; }
+        // Hiệu ứng đạn riêng cho Special 1 (dùng cho chiêu phun lửa của Sasuke)
+        public string Special1ProjectilePrefix { get; init; } = "";
+        public int Special1ProjectileFrames { get; init; } = 10;
+        public int Special1SpawnFrame { get; init; } = 8;
 
-        public string JumpPrefix { get; init; } = "";
-        public int JumpFrames { get; init; }
+        // Toàn bộ các bộ Animation tương ứng với các thư mục ảnh mới
+        public AnimClip Idle { get; init; } = new();
+        public AnimClip Run { get; init; } = new();
+        public AnimClip Jump { get; init; } = new();
+        public AnimClip Dash { get; init; } = new();
+        public AnimClip Block { get; init; } = new();
 
-        public string AttackPrefix { get; init; } = "";
-        public int AttackFrames { get; init; }
-        public int ComboSplitFrame { get; init; } // Nhịp ngừng của đòn đánh thường (Ví dụ: Frame 4)
-        public double AttackFrameTime { get; init; } = 0.08;
+        public AnimClip Attack { get; init; } = new();
+        public AnimClip JumpAttack { get; init; } = new();
+        public AnimClip CrouchAttack { get; init; } = new();
 
-        public string ThrowPrefix { get; init; } = "";
-        public int ThrowFrames { get; init; }
+        public AnimClip Throw { get; init; } = new();
+        public AnimClip JumpThrow { get; init; } = new();
 
-        public string UltimatePrefix { get; init; } = "";
-        public int UltimateFrames { get; init; }
+        public AnimClip Special1 { get; init; } = new();
+        public AnimClip Special2 { get; init; } = new();
+        public AnimClip Ultimate { get; init; } = new();
 
-        public string BlockImage { get; init; } = ""; // Ảnh phòng thủ tĩnh
-
-        public string HurtPrefix { get; init; } = "";
-        public int DeadFrames { get; init; } // Số frame khi hết HP
+        public AnimClip Hurt { get; init; } = new();
+        public AnimClip Knockdown { get; init; } = new();
+        public AnimClip GetUp { get; init; } = new();
+        public EffectConfig? DashEffect { get; init; }
+        public EffectConfig? UltimateBackEffect { get; init; }
     }
 }

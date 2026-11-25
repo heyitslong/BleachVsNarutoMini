@@ -12,9 +12,13 @@ namespace BleachVsNarutoMini.Entities
         {
             if (!_cache.TryGetValue(file, out var img))
             {
+                string path = file.StartsWith("Assets/", StringComparison.OrdinalIgnoreCase)
+                    ? file
+                    : $"Assets/Images/{file}";
+
                 img = new BitmapImage();
                 img.BeginInit();
-                img.UriSource = new Uri($"pack://application:,,,/Assets/Images/{file}");
+                img.UriSource = new Uri($"pack://application:,,,/{path}");
                 img.CacheOption = BitmapCacheOption.OnLoad;
                 img.EndInit();
                 img.Freeze();

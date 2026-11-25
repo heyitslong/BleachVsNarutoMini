@@ -12,67 +12,32 @@ namespace BleachVsNarutoMini.Entities
     {
         private const double Gravity = 1800;
         private const double JumpPower = -920;
-        private const double RunFrameTime = 0.10;
-        private const double StageMargin = 35;      // [Phát thêm] Khoảng cách lề hai bên tường để nhân vật không chạm viền màn hình
 
-        // [Phát thêm] Thông số kỹ năng Đánh thường (Attack)
-        private const double AttackCooldown = 0.17;      // Thời gian chờ sau khi chạy hết chuỗi frame đánh (giây)
-        private const double AttackStepDistance = 5;    // Độ nhúc nhích tiến lên phía trước ở mỗi tư thế đánh (pixel)
+        private const double DashSpeed = 1100;
+        private const double DashDistance = 200;
+        private const double DashCooldown = 0.25;
 
-        // [Phát thêm] Thông số kỹ năng Lướt (Dash)
-        private const double DashSpeed = 1000;          // Tốc độ lướt (pixel/giây)
-        private const double DashDistance = 200;        // [Phát thêm] Độ dài quãng đường lướt (pixel)
-        private const double DashCooldown = 0;          // Thời gian chờ giữa 2 lần lướt
-
-        // Mức tiêu hao và tốc độ hồi Chakra
         private const double JumpChakraCost = 10;
-        private const double DashChakraCost = 10;       // [Phát thêm] Lướt tốn 10 chakra
-        private const double TeleportChakraCost = 20;   // [Phát thêm] Tốc biến tốn 20 chakra
-        private const double TeleportCooldown = 1.5;    // [Phát thêm] Thời gian chờ hồi chiêu tốc biến (1.5 giây)
+        private const double DashChakraCost = 10;
         private const double ThrowChakraCost = 15;
-        private const int MaxConsecutiveThrows = 2;     // [Phát thêm] Số lần ném phi tiêu liên tiếp tối đa
-        private const double ThrowCooldown = 0.5;       // [Phát thêm] Thời gian chờ sau khi ném 2 lần liên tiếp (0.5 giây)
+        private const double Special1ChakraCost = 30;
+        private const double Special2ChakraCost = 40;
         private const double UltChakraCost = 70;
-        private const double UltCooldown = 3.0;         // [Phát thêm] Thời gian chờ hồi chiêu cuối (3 giây)
-        private const double ChakraRegenPerSec = 8;
+        private const double ChakraRegenPerSec = 10;
 
-        // [Phát thêm] Thông số thanh Chống đỡ (Guard)
-        private const double MaxGuardValue = 45;          // Sức chịu đựng tối đa của thanh chống đỡ (45 điểm)
-        private const double GuardRegenPerSec = 12;       // Tốc độ hồi thanh chống đỡ mỗi giây khi không giữ nút đỡ
-        private const double GuardRegenDelay = 0.8;       // Thời gian chờ sau khi đỡ đòn mới bắt đầu hồi lại (giây)
-        private const double GuardVisibleDuration = 1.5;  // Thời gian thanh chống đỡ hiện lên sau khi đỡ trúng đòn (giây)
-
-        // [Phát thêm] Thông số đẩy lùi khi trúng đòn (Knockback)
-        private const double HitKnockbackSpeed = 320;   // Vận tốc bật lùi khi trúng đòn thường/phi tiêu (pixel/giây)
-        private const double UltKnockbackSpeed = 480;   // Vận tốc bật lùi mạnh hơn khi trúng chiêu cuối (pixel/giây)
-        private const double KnockbackFriction = 1400;  // Lực ma sát giảm tốc độ đẩy lùi mỗi giây
+        private const string ShurikenPrefix = "Assets/effect/khiNhanVatPhongPhiTieu/sskanhphitieu";
 
         private readonly FighterConfig _cfg;
-        private Key _left, _right, _jump, _attack, _block, _throw, _ult, _dash, _teleport;
-        // [Phát thêm] Phím phụ hỗ trợ cụm phím số bên phải (Numpad 1-6) cho Player 2
-        private Key _jumpAlt = Key.None, _attackAlt = Key.None, _throwAlt = Key.None, _ultAlt = Key.None, _dashAlt = Key.None, _teleportAlt = Key.None;
+        private Key _left, _right, _jump, _attack, _block, _throw, _ult, _dash;
         private readonly ScaleTransform _flip = new(1, 1);
 
-        private double _vy, _timer;
-        private double _attackCooldownTimer;     // [Phát thêm] Bộ đếm thời gian hồi sau khi chạy hết frame đánh (1 giây)
-        private int _lastAttackSteppedFrame = -1;// [Phát thêm] Ghi nhớ frame đánh vừa nhúc nhích để mỗi tư thế chỉ bước 1 lần
-        private double _dashedDistance;          // [Phát thêm] Quãng đường đã lướt trong lượt hiện tại
-        private double _dashCooldownTimer;       // [Phát thêm] Bộ đếm thời gian hồi chiêu lướt
-        private double _teleportCooldownTimer;   // [Phát thêm] Bộ đếm thời gian hồi chiêu tốc biến
-        private double _throwCooldownTimer;      // [Phát thêm] Bộ đếm thời gian hồi sau 2 lần ném phi tiêu liên tiếp (0.5s)
-        private double _throwComboResetTimer;    // [Phát thêm] Bộ đếm đặt lại chuỗi ném nếu chỉ ném 1 lần rồi nghỉ
-        private int _consecutiveThrows;          // [Phát thêm] Đếm số lần đã ném phi tiêu liên tiếp
-        private double _ultCooldownTimer;        // [Phát thêm] Bộ đếm thời gian hồi chiêu cuối (3 giây)
-        private double _ultDashedDistance;       // [Phát thêm] Quãng đường đã lướt trong lượt tung chiêu cuối hiện tại
-        private double _guardRegenTimer;         // [Phát thêm] Bộ đếm thời gian trễ trước khi hồi thanh chống đỡ
-        private double _guardVisibleTimer;       // [Phát thêm] Bộ đếm thời gian hiển thị thanh chống đỡ khi đỡ bị đánh
-        private double _hurtDuration = 0.3;      // [Phát thêm] Thời gian bị choáng khi trúng đòn (mặc định 0.3s)
-        private double _knockbackVelocity;       // [Phát thêm] Vận tốc đẩy lùi hiện tại
-        private double _pendingKnockbackVelocity;// [Phát thêm] Vận tốc đẩy lùi chờ kích hoạt ở nhịp kết thúc chiêu cuối
-        private double _knockbackDelayTimer;     // [Phát thêm] Thời gian giữ đối phương đứng chịu đòn trước khi bật lùi
+        private double _vy, _timer, _stateHoldTimer;
+        private double _dashedDistance, _dashCooldownTimer, _ultDashedDistance;
+        private double _hurtDuration = 0.3;
         private int _frame;
         private int _lastHitFrame = -1;
-        private bool _combo, _attackWasDown, _jumpWasDown, _throwWasDown, _ultWasDown, _dashWasDown, _teleportWasDown, _hasThrown, _ultHasHit;
+        private bool _combo, _attackWasDown, _jumpWasDown, _throwWasDown, _ultWasDown, _dashWasDown;
+        private bool _hasSpawnedSkillObj, _skillHasHit;
         private string _currentFile = "";
 
         public Image Sprite { get; }
@@ -81,18 +46,19 @@ namespace BleachVsNarutoMini.Entities
         public int Hp { get; private set; } = 300;
         public double MaxChakra { get; } = 200;
         public double Chakra { get; private set; } = 200;
-        public double MaxGuard { get; } = MaxGuardValue;                       // [Phát thêm] Giá trị tối đa thanh chống đỡ
-        public double Guard { get; private set; } = MaxGuardValue;             // [Phát thêm] Giá trị hiện tại thanh chống đỡ
-        public bool ShowGuardBar => _guardVisibleTimer > 0 || Guard < MaxGuard;// [Phát thêm] Chỉ hiện khi đỡ bị đánh và trong lúc thanh đang hồi đầy
         public bool IsDead => Hp <= 0;
 
         public double StageWidth { get; set; } = 1024;
         public double GroundY { get; set; } = 620;
         public IReadOnlyList<Rect> Platforms { get; set; } = Array.Empty<Rect>();
-        public Fighter? Opponent { get; set; }           // [Phát thêm] Tham chiếu đối thủ để xác định vị trí sau lưng khi tốc biến
         public event Action<Projectile>? OnSpawnProjectile;
-        public event Action<DustEffect>? OnSpawnEffect; // [Phát thêm] Sự kiện sinh hiệu ứng bụi/khói
-        public event Action? OnNotEnoughChakra;         // [Phát thêm] Sự kiện báo hiệu khi bấm chiêu lúc không đủ Chakra
+        public event Action? OnNotEnoughChakra;
+
+        public event Action<DustEffect>? OnSpawnEffect;         // <-- thêm
+        public Fighter? Opponent { get; set; }                  // <-- thêm
+        public bool ShowGuardBar => State == FighterState.Block;
+        public double MaxGuard { get; } = 100;
+        public double Guard { get; private set; } = 100;
 
         private double BodyW => Width * _cfg.BodyWidthRatio;
         private double BodyOffsetX => (Width - BodyW) / 2;
@@ -106,46 +72,45 @@ namespace BleachVsNarutoMini.Entities
             ? new Rect(BodyX + BodyW, BodyTop, _cfg.AttackReach, BodyH)
             : new Rect(BodyX - _cfg.AttackReach, BodyTop, _cfg.AttackReach, BodyH);
 
-        // [Phát thêm] Vùng gây sát thương sát trước mặt khi áp sát chiêu cuối (tính từ mép thân nhân vật)
-        private Rect UltimateBox => FacingRight
+        private Rect SkillBox => FacingRight
             ? new Rect(BodyX + BodyW, BodyTop - 10, _cfg.UltimateReach, BodyH + 10)
             : new Rect(BodyX - _cfg.UltimateReach, BodyTop - 10, _cfg.UltimateReach, BodyH + 10);
 
         protected Fighter(double x, FighterConfig cfg,
-                          Key left, Key right, Key jump, Key attack, Key block, Key throwSkill, Key ult, Key dash, Key teleport = Key.None)
+                          Key left, Key right, Key jump, Key attack, Key block, Key throwSkill, Key ult, Key dash)
             : base(x, cfg.GroundBottom - cfg.Height + cfg.FootPadding, cfg.Width, cfg.Height, 260)
         {
             _cfg = cfg;
             _left = left; _right = right; _jump = jump; _attack = attack;
-            _block = block; _throw = throwSkill; _ult = ult; _dash = dash; _teleport = teleport;
+            _block = block; _throw = throwSkill; _ult = ult; _dash = dash;
 
             FacingRight = cfg.StartFacingRight;
             GroundY = cfg.GroundBottom;
 
-            Sprite = new Image { Width = Width, Height = Height, RenderTransform = _flip, RenderTransformOrigin = new Point(0.5, 0.5) };
+            Sprite = new Image
+            {
+                Width = Width,
+                Height = Height,
+                RenderTransform = _flip,
+                RenderTransformOrigin = new Point(0.5, 0.5)
+            };
             RenderOptions.SetBitmapScalingMode(Sprite, BitmapScalingMode.NearestNeighbor);
-            SetImage(_cfg.Idle); Draw();
+            Panel.SetZIndex(Sprite, 1); // <-- chèn dòng này vào đây
+            SetClipImage(_cfg.Idle, 0);
+            Draw();
         }
 
-        //[Nghĩa thêm] thêm Assign Player để chọn được nhân vật, bỏ mặc định Nar trái Sa phải
         public void AssignPlayer(int playerIndex, double spawnX)
         {
             if (playerIndex == 1)
             {
                 _left = Key.A; _right = Key.D; _jump = Key.K; _attack = Key.J;
-                _block = Key.S; _throw = Key.U; _ult = Key.I; _dash = Key.L; _teleport = Key.O;
-                _jumpAlt = _attackAlt = _throwAlt = _ultAlt = _dashAlt = _teleportAlt = Key.None;
+                _block = Key.S; _throw = Key.U; _ult = Key.I; _dash = Key.L;
             }
             else
             {
-                // [Phát thêm] Hỗ trợ cả hàng phím số trên (D1-D6) lẫn cụm phím số bên phải (NumPad1-NumPad6)
-                _left = Key.Left; _right = Key.Right; _block = Key.Down;
-                _jump = Key.D2; _jumpAlt = Key.NumPad2;
-                _attack = Key.D1; _attackAlt = Key.NumPad1;
-                _throw = Key.D4; _throwAlt = Key.NumPad4;
-                _ult = Key.D5; _ultAlt = Key.NumPad5;
-                _dash = Key.D3; _dashAlt = Key.NumPad3;
-                _teleport = Key.D6; _teleportAlt = Key.NumPad6;
+                _left = Key.Left; _right = Key.Right; _jump = Key.D2; _attack = Key.D1;
+                _block = Key.Down; _throw = Key.D4; _ult = Key.D5; _dash = Key.D3;
             }
 
             X = spawnX;
@@ -153,117 +118,57 @@ namespace BleachVsNarutoMini.Entities
             Draw();
         }
 
-        // [Phát thêm] Kiểm tra phím chính hoặc phím Numpad thay thế
-        private static bool IsActionDown(Key primary, Key secondary = Key.None) =>
-            InputManager.IsKeyDown(primary) || (secondary != Key.None && InputManager.IsKeyDown(secondary));
-
         public void UpdateLogic(double dt)
         {
             if (State == FighterState.Dead) { UpdateDead(dt); Draw(); return; }
 
-            // [Phát thêm] Cập nhật nhịp chờ đẩy lùi của chiêu cuối và lực trượt lùi
-            UpdateKnockback(dt);
-
             if (Chakra < MaxChakra && ChakraRegenPerSec > 0)
                 Chakra = Math.Min(MaxChakra, Chakra + ChakraRegenPerSec * dt);
 
-            // [Phát thêm] Giảm thời gian chờ hồi thanh chống đỡ và tự hồi khi không giữ nút đỡ
-            if (_guardRegenTimer > 0)
-                _guardRegenTimer = Math.Max(0, _guardRegenTimer - dt);
-            else if (State != FighterState.Block && Guard < MaxGuard && GuardRegenPerSec > 0)
-                Guard = Math.Min(MaxGuard, Guard + GuardRegenPerSec * dt);
-
-            // [Phát thêm] Giảm thời gian hiển thị thanh chống đỡ sau khi đỡ trúng đòn
-            if (_guardVisibleTimer > 0)
-                _guardVisibleTimer = Math.Max(0, _guardVisibleTimer - dt);
-
-            // [Phát thêm] Giảm thời gian hồi chiêu của Đánh thường, Lướt, Tốc biến, Ném phi tiêu và Chiêu cuối
-            if (_attackCooldownTimer > 0)
-                _attackCooldownTimer = Math.Max(0, _attackCooldownTimer - dt);
             if (_dashCooldownTimer > 0)
                 _dashCooldownTimer = Math.Max(0, _dashCooldownTimer - dt);
-            if (_teleportCooldownTimer > 0)
-                _teleportCooldownTimer = Math.Max(0, _teleportCooldownTimer - dt);
-            if (_throwCooldownTimer > 0)
-                _throwCooldownTimer = Math.Max(0, _throwCooldownTimer - dt);
-            if (_ultCooldownTimer > 0)
-                _ultCooldownTimer = Math.Max(0, _ultCooldownTimer - dt);
 
-            // [Phát thêm] Nếu đã ném 1 lần nhưng đợi quá 0.5s không ném tiếp thì đặt lại bộ đếm về 0
-            if (State != FighterState.Throw && _consecutiveThrows > 0 && _throwCooldownTimer <= 0)
-            {
-                _throwComboResetTimer -= dt;
-                if (_throwComboResetTimer <= 0) _consecutiveThrows = 0;
-            }
-
-            bool attackDown = IsActionDown(_attack, _attackAlt);
+            bool attackDown = InputManager.IsKeyDown(_attack);
             bool attackPressed = attackDown && !_attackWasDown;
             _attackWasDown = attackDown;
 
-            bool jumpDown = IsActionDown(_jump, _jumpAlt);
+            bool jumpDown = InputManager.IsKeyDown(_jump);
             bool jumpPressed = jumpDown && !_jumpWasDown;
             _jumpWasDown = jumpDown;
 
-            bool throwDown = IsActionDown(_throw, _throwAlt);
+            bool throwDown = InputManager.IsKeyDown(_throw);
             bool throwPressed = throwDown && !_throwWasDown;
             _throwWasDown = throwDown;
 
-            bool ultDown = IsActionDown(_ult, _ultAlt);
+            bool ultDown = InputManager.IsKeyDown(_ult);
             bool ultPressed = ultDown && !_ultWasDown;
             _ultWasDown = ultDown;
 
-            bool dashDown = IsActionDown(_dash, _dashAlt);
+            bool dashDown = InputManager.IsKeyDown(_dash);
             bool dashPressed = dashDown && !_dashWasDown;
             _dashWasDown = dashDown;
 
-            bool teleportDown = IsActionDown(_teleport, _teleportAlt);
-            bool teleportPressed = teleportDown && !_teleportWasDown;
-            _teleportWasDown = teleportDown;
-
+            bool blockDown = InputManager.IsKeyDown(_block);
             int dir = (InputManager.IsKeyDown(_right) ? 1 : 0) - (InputManager.IsKeyDown(_left) ? 1 : 0);
 
-            // [Phát thêm] Kích hoạt Tốc biến (O/6) khi đứng, chạy, nhảy HOẶC đang thi triển Chiêu cuối (I/5) để đánh úp sau lưng
-            bool isUltTeleport = State == FighterState.Ultimate && !_ultHasHit;
-            bool canTeleport = State == FighterState.Idle || State == FighterState.Run || State == FighterState.Jump || isUltTeleport;
-            if (canTeleport && teleportPressed && _teleportCooldownTimer <= 0 && Opponent != null && !Opponent.IsDead)
-            {
-                if (TryUseChakra(TeleportChakraCost))
-                {
-                    _teleportCooldownTimer = TeleportCooldown;
-                    PerformTeleport(isUltTeleport);
-                    Draw();
-                    return;
-                }
-                else OnNotEnoughChakra?.Invoke();
-            }
-
+            // 1. Điều khiển khi đứng / chạy
             if (State == FighterState.Idle || State == FighterState.Run)
             {
-                // [Phát thêm] Chỉ cho đỡ đòn khi thanh chống đỡ còn điểm (Guard > 0)
-                if (InputManager.IsKeyDown(_block) && Guard > 0) SetState(FighterState.Block);
-                else if (ultDown)
+                if (blockDown)
                 {
-                    // [Phát thêm] Chỉ cho kích hoạt chiêu cuối khi đã hết 3 giây hồi chiêu
-                    if (_ultCooldownTimer <= 0)
-                    {
-                        if (TryUseChakra(UltChakraCost)) SetState(FighterState.Ultimate);
-                        else if (ultPressed) OnNotEnoughChakra?.Invoke();
-                    }
+                    if (!TryTriggerBlockCombos(attackPressed, throwPressed, ultPressed))
+                        SetState(FighterState.Block);
                 }
-                else if (throwDown)
+                else if (ultPressed)
                 {
-                    // [Phát thêm] Chỉ cho ném phi tiêu khi chưa vượt quá 2 lần liên tiếp (đã hết 0.5s hồi chiêu)
-                    if (_throwCooldownTimer <= 0)
-                    {
-                        if (TryUseChakra(ThrowChakraCost))
-                        {
-                            _consecutiveThrows++;
-                            SetState(FighterState.Throw);
-                        }
-                        else if (throwPressed) OnNotEnoughChakra?.Invoke();
-                    }
+                    if (TryUseChakra(UltChakraCost)) SetState(FighterState.Ultimate);
+                    else OnNotEnoughChakra?.Invoke();
                 }
-                // [Phát thêm] Kích hoạt Lướt khi đang đứng/chạy trên mặt đất (không cho lướt khi đang nhảy)
+                else if (throwPressed)
+                {
+                    if (TryUseChakra(ThrowChakraCost)) SetState(FighterState.Throw);
+                    else OnNotEnoughChakra?.Invoke();
+                }
                 else if (dashPressed && _dashCooldownTimer <= 0)
                 {
                     if (TryUseChakra(DashChakraCost))
@@ -271,41 +176,68 @@ namespace BleachVsNarutoMini.Entities
                         if (dir != 0) FacingRight = dir > 0;
                         _dashCooldownTimer = DashCooldown;
                         SetState(FighterState.Dash);
-                        SpawnDustEffect();
                     }
                     else OnNotEnoughChakra?.Invoke();
                 }
-                // [Phát thêm] Chỉ cho đánh tiếp sau khi hết 1 giây hồi chiêu của chuỗi đánh trước
-                else if (attackPressed && _attackCooldownTimer <= 0) SetState(FighterState.Attack);
+                else if (attackPressed) SetState(FighterState.Attack);
                 else if (jumpPressed)
                 {
-                    if (TryUseChakra(JumpChakraCost))
-                    {
-                        _vy = JumpPower;
-                        SetState(FighterState.Jump);
-                        SpawnDustEffect();
-                    }
+                    if (TryUseChakra(JumpChakraCost)) { _vy = JumpPower; SetState(FighterState.Jump); }
                     else OnNotEnoughChakra?.Invoke();
                 }
             }
-            else if (State == FighterState.Attack && attackPressed) _combo = true;
-            else if ((ultPressed && _ultCooldownTimer <= 0 && Chakra < UltChakraCost) ||
-                     (throwPressed && _throwCooldownTimer <= 0 && Chakra < ThrowChakraCost) ||
-                     (jumpPressed && Chakra < JumpChakraCost) ||
-                     (canTeleport && teleportPressed && _teleportCooldownTimer <= 0 && Chakra < TeleportChakraCost) ||
-                     (State != FighterState.Jump && dashPressed && _dashCooldownTimer <= 0 && Chakra < DashChakraCost))
+            // 2. Điều khiển khi đang giữ phím Đỡ (S / Down): mở khóa Ngồi đánh & 2 Chiêu đặc biệt
+            else if (State == FighterState.Block)
             {
-                OnNotEnoughChakra?.Invoke();
+                TryTriggerBlockCombos(attackPressed, throwPressed, ultPressed);
+            }
+            // 3. Điều khiển trên không: Nhảy đánh, Nhảy ném phi tiêu, Lướt trên không
+            else if (State == FighterState.Jump)
+            {
+                if (dashPressed && _dashCooldownTimer <= 0)
+                {
+                    if (TryUseChakra(DashChakraCost))
+                    {
+                        if (dir != 0) FacingRight = dir > 0;
+                        _dashCooldownTimer = DashCooldown;
+                        SetState(FighterState.Dash);
+                    }
+                    else OnNotEnoughChakra?.Invoke();
+                }
+                else if (attackPressed && _cfg.JumpAttack.HasFrames)
+                {
+                    SetState(FighterState.JumpAttack);
+                }
+                else if (throwPressed)
+                {
+                    if (TryUseChakra(ThrowChakraCost))
+                        SetState(_cfg.JumpThrow.HasFrames ? FighterState.JumpThrow : FighterState.Throw);
+                    else OnNotEnoughChakra?.Invoke();
+                }
+            }
+            // 4. Nối combo đánh thường
+            else if (State == FighterState.Attack && attackPressed)
+            {
+                _combo = true;
             }
 
-            bool canMoveX = State == FighterState.Idle || State == FighterState.Run || State == FighterState.Jump;
+            // Di chuyển ngang khi đứng, chạy, nhảy hoặc đang ra chiêu trên không
+            bool canMoveX = State == FighterState.Idle || State == FighterState.Run
+                         || State == FighterState.Jump || State == FighterState.JumpAttack || State == FighterState.JumpThrow;
             if (canMoveX && dir != 0)
             {
-                X = ClampStageX(X + dir * Speed * dt);
-                FacingRight = dir > 0;
+                X = Math.Clamp(X + dir * Speed * dt, 20 - BodyOffsetX, StageWidth - 20 - BodyW - BodyOffsetX);
+                if (State != FighterState.JumpAttack && State != FighterState.JumpThrow)
+                    FacingRight = dir > 0;
             }
 
-            if (State != FighterState.Jump && State != FighterState.Dash && !IsStandingOnSurface()) { _vy = 0; SetState(FighterState.Jump); }
+            bool isAirState = State == FighterState.Jump || State == FighterState.JumpAttack
+                           || State == FighterState.JumpThrow || State == FighterState.Dash;
+            if (!isAirState && !IsStandingOnSurface())
+            {
+                _vy = 0;
+                SetState(FighterState.Jump);
+            }
 
             switch (State)
             {
@@ -313,205 +245,137 @@ namespace BleachVsNarutoMini.Entities
                 case FighterState.Run: UpdateGround(dir, dt); break;
                 case FighterState.Jump: UpdateJump(dt); break;
                 case FighterState.Dash: UpdateDash(dt); break;
+                case FighterState.Block: UpdateBlock(dt); break;
                 case FighterState.Attack: UpdateAttack(dt); break;
+                case FighterState.JumpAttack: UpdateAirAction(_cfg.JumpAttack, false, dt); break;
+                case FighterState.JumpThrow: UpdateAirAction(_cfg.JumpThrow, true, dt); break;
+                case FighterState.CrouchAttack: UpdateOneShotClip(_cfg.CrouchAttack, dt); break;
                 case FighterState.Throw: UpdateThrow(dt); break;
+                case FighterState.Special1: UpdateSpecial1(dt); break;
+                case FighterState.Special2: UpdateOneShotClip(_cfg.Special2, dt); break;
                 case FighterState.Ultimate: UpdateUltimate(dt); break;
-                case FighterState.Block: UpdateBlock(); break;
                 case FighterState.Hurt: UpdateHurt(dt); break;
+                case FighterState.Knockdown: UpdateKnockdown(dt); break;
+                case FighterState.GetUp: UpdateOneShotClip(_cfg.GetUp, dt); break;
             }
+
             Draw();
         }
 
-        // [Phát thêm] Tốc biến ra sau lưng đối thủ, thả khói 2 đầu và giữ nguyên Chiêu cuối nếu đang kết hợp I + O
-        private void PerformTeleport(bool keepUltimate = false)
+        private bool TryTriggerBlockCombos(bool attackPressed, bool throwPressed, bool ultPressed)
         {
-            if (Opponent == null) return;
-
-            SpawnDustEffect();
-
-            double oppCenterX = Opponent.BodyX + Opponent.BodyW / 2;
-            double behindOffset = (Opponent.BodyW + BodyW) / 2 + 25;
-            double rawTargetX = Opponent.FacingRight
-                ? (oppCenterX - behindOffset - BodyW / 2)
-                : (oppCenterX + behindOffset - BodyW / 2);
-
-            X = ClampStageX(rawTargetX);
-
-            Y = Math.Min(GroundY - Height + _cfg.FootPadding, Opponent.FeetY - Height + _cfg.FootPadding);
-            double newCenterX = BodyX + BodyW / 2;
-            FacingRight = oppCenterX >= newCenterX;
-
-            SpawnDustEffect();
-
-            if (keepUltimate)
+            if (ultPressed && _cfg.Special2.HasFrames)
             {
-                int chargeFrames = _cfg.UltimateChargeFrames > 0 ? _cfg.UltimateChargeFrames : _cfg.UltimateFrames / 2;
-                if (_frame < chargeFrames)
-                {
-                    _frame = chargeFrames;
-                    _timer = 0;
-                }
-                _ultDashedDistance = 0;
-                return;
+                if (TryUseChakra(Special2ChakraCost)) { SetState(FighterState.Special2); return true; }
+                OnNotEnoughChakra?.Invoke();
+                return true;
             }
-
-            _vy = 0;
-            SetState(IsStandingOnSurface() ? FighterState.Idle : FighterState.Jump);
-        }
-
-        private double ClampStageX(double nextX) =>
-            Math.Clamp(nextX, StageMargin - BodyOffsetX, StageWidth - StageMargin - BodyW - BodyOffsetX);
-
-        private void SpawnDustEffect()
-        {
-            double footCenterX = BodyX + BodyW / 2;
-            OnSpawnEffect?.Invoke(new DustEffect(footCenterX, FeetY));
+            if (throwPressed && _cfg.Special1.HasFrames)
+            {
+                if (TryUseChakra(Special1ChakraCost)) { SetState(FighterState.Special1); return true; }
+                OnNotEnoughChakra?.Invoke();
+                return true;
+            }
+            if (attackPressed && _cfg.CrouchAttack.HasFrames)
+            {
+                SetState(FighterState.CrouchAttack);
+                return true;
+            }
+            return false;
         }
 
         public void TryHit(Fighter target)
         {
-            if (target.IsDead) return;
+            if (target.IsDead || target.State == FighterState.Knockdown || target.State == FighterState.GetUp)
+                return;
 
-            double myCenterX = BodyX + BodyW / 2;
-
-            // Đòn đánh thường và combo
+            // Đánh thường nhiều nhịp theo bộ ảnh 17-18 frame
             if (State == FighterState.Attack)
             {
-                // [Phát thêm] Chỉ gây sát thương 1 lần ở đòn đầu (_frame == 1) và 1 lần ở đòn kết combo (_frame == 5)
-                bool hitFrame = _frame == 1 || (_combo && _frame == 5);
+                bool hitFrame = _frame == 2 || (_combo && (_frame == 7 || _frame == 11 || _frame == 15));
                 if (!hitFrame || _lastHitFrame == _frame) return;
 
                 if (AttackBox.IntersectsWith(target.Bounds))
                 {
-                    target.TakeDamage(_cfg.AttackDamage, 0.3, myCenterX);
+                    bool isFinisher = _combo && _frame >= 15;
+                    target.TakeDamage(_cfg.AttackDamage, isFinisher ? 0.5 : 0.25, isFinisher);
                     _lastHitFrame = _frame;
                 }
             }
+            // Nhảy đánh
+            else if (State == FighterState.JumpAttack)
+            {
+                if (_skillHasHit || _frame < _cfg.JumpAttack.Count / 3) return;
+                if (AttackBox.IntersectsWith(target.Bounds))
+                {
+                    target.TakeDamage(_cfg.JumpAttackDamage, 0.3, false);
+                    _skillHasHit = true;
+                }
+            }
+            // Ngồi đánh / Đánh đặc biệt (S + J)
+            else if (State == FighterState.CrouchAttack)
+            {
+                if (_skillHasHit || _frame < _cfg.CrouchAttack.Count / 2) return;
+                if (AttackBox.IntersectsWith(target.Bounds))
+                {
+                    target.TakeDamage(_cfg.CrouchAttackDamage, 0.35, false);
+                    _skillHasHit = true;
+                }
+            }
+            // Chiêu đặc biệt 1 dạng cận chiến (Naruto danhdacbiet; Sasuke phunlua bắn đạn riêng)
+            else if (State == FighterState.Special1 && string.IsNullOrEmpty(_cfg.Special1ProjectilePrefix))
+            {
+                if (_skillHasHit || _frame < _cfg.Special1.Count / 3) return;
+                if (SkillBox.IntersectsWith(target.Bounds))
+                {
+                    target.TakeDamage(_cfg.Special1Damage, 0.45, true);
+                    _skillHasHit = true;
+                }
+            }
+            // Chiêu đặc biệt 2 (Naruto chieudacbiet / Sasuke dungchieudacbiet)
+            else if (State == FighterState.Special2)
+            {
+                if (_skillHasHit || _frame < _cfg.Special2.Count / 3) return;
+                if (SkillBox.IntersectsWith(target.Bounds))
+                {
+                    target.TakeDamage(_cfg.Special2Damage, 0.5, true);
+                    _skillHasHit = true;
+                }
+            }
+            // Chiêu cuối (Rasengan / Chidori)
             else if (State == FighterState.Ultimate)
             {
-                int chargeFrames = _cfg.UltimateChargeFrames > 0 ? _cfg.UltimateChargeFrames : _cfg.UltimateFrames / 2;
-                if (_frame < chargeFrames || _ultHasHit) return;
+                int chargeFrames = _cfg.UltimateChargeFrames > 0 ? _cfg.UltimateChargeFrames : _cfg.Ultimate.Count / 2;
+                if (_frame < chargeFrames || _skillHasHit) return;
 
-                if (UltimateBox.IntersectsWith(target.Bounds))
+                if (SkillBox.IntersectsWith(target.Bounds))
                 {
-                    double remainingUltTime = Math.Max(0.4, (_cfg.UltimateFrames - _frame) * 0.08 + 0.1);
-                    target.TakeDamage(_cfg.UltimateDamage, remainingUltTime, myCenterX);
-                    _ultHasHit = true;
+                    double remainingUltTime = Math.Max(0.5, (_cfg.Ultimate.Count - _frame) * _cfg.Ultimate.FrameTime);
+                    target.TakeDamage(_cfg.UltimateDamage, remainingUltTime, true);
+                    _skillHasHit = true;
                 }
             }
         }
 
-        // [Phát thêm] Xử lý đỡ đòn, bật hiển thị thanh chống đỡ khi đỡ bị đánh và đẩy lùi khi chịu sát thương
-        public void TakeDamage(int amount, double stunDuration = 0.3, double? sourceX = null)
+        public void TakeDamage(int amount, double stunDuration = 0.3, bool knockdown = false)
         {
-            if (IsDead) return;
-
-            double myCenterX = BodyX + BodyW / 2;
-            double? attackerCenterX = sourceX ?? (Opponent != null ? Opponent.BodyX + Opponent.BodyW / 2 : null);
-
-            bool isHitFromBehind = attackerCenterX.HasValue &&
-                ((FacingRight && attackerCenterX.Value < myCenterX) ||
-                 (!FacingRight && attackerCenterX.Value > myCenterX));
-
-            if (State == FighterState.Block && Guard > 0 && !isHitFromBehind)
-            {
-                _guardRegenTimer = GuardRegenDelay;
-                _guardVisibleTimer = GuardVisibleDuration; // [Phát thêm] Hiện thanh chống đỡ khi đỡ mà bị đánh
-
-                if (Guard >= amount)
-                {
-                    Guard -= amount;
-                    if (Guard <= 0)
-                    {
-                        Guard = 0;
-                        ApplyKnockback(attackerCenterX, myCenterX, HitKnockbackSpeed * 0.8);
-                        SetState(FighterState.Hurt);
-                        _hurtDuration = 0.25;
-                    }
-                    return;
-                }
-                else
-                {
-                    int remainingDamage = (int)Math.Ceiling(amount - Guard);
-                    Guard = 0;
-                    amount = remainingDamage;
-                }
-            }
-
+            if (State == FighterState.Block || IsDead) return;
             Hp = Math.Max(0, Hp - amount);
+
             if (Hp == 0)
             {
-                ApplyKnockback(attackerCenterX, myCenterX, UltKnockbackSpeed);
                 SetState(FighterState.Dead);
-                return;
             }
-
-            if (State == FighterState.Ultimate) return;
-
-            bool isUltimateHit = stunDuration > 0.35;
-            double knockSpeed = isUltimateHit ? UltKnockbackSpeed : HitKnockbackSpeed;
-            double delayBeforeKnock = isUltimateHit ? Math.Max(0, stunDuration - 0.12) : 0;
-            ApplyKnockback(attackerCenterX, myCenterX, knockSpeed, delayBeforeKnock);
-
-            SetState(FighterState.Hurt);
-            _hurtDuration = stunDuration;
-        }
-
-        private void ApplyKnockback(double? attackerCenterX, double myCenterX, double speed, double delay = 0)
-        {
-            double velocity;
-            if (attackerCenterX.HasValue && Math.Abs(attackerCenterX.Value - myCenterX) > 1)
+            else if (knockdown && _cfg.Knockdown.HasFrames)
             {
-                bool attackerOnRight = attackerCenterX.Value > myCenterX;
-                FacingRight = attackerOnRight;
-                velocity = attackerOnRight ? -speed : speed;
+                SetState(FighterState.Knockdown);
+                _hurtDuration = Math.Max(0.35, stunDuration);
             }
             else
             {
-                velocity = FacingRight ? -speed : speed;
+                SetState(FighterState.Hurt);
+                _hurtDuration = stunDuration;
             }
-
-            if (delay > 0)
-            {
-                _knockbackVelocity = 0;
-                _pendingKnockbackVelocity = velocity;
-                _knockbackDelayTimer = delay;
-            }
-            else
-            {
-                _knockbackVelocity = velocity;
-                _pendingKnockbackVelocity = 0;
-                _knockbackDelayTimer = 0;
-            }
-        }
-
-        private void UpdateKnockback(double dt)
-        {
-            if (_knockbackDelayTimer > 0)
-            {
-                _knockbackDelayTimer -= dt;
-                if (_knockbackDelayTimer <= 0)
-                {
-                    _knockbackDelayTimer = 0;
-                    _knockbackVelocity = _pendingKnockbackVelocity;
-                    _pendingKnockbackVelocity = 0;
-                }
-                return;
-            }
-
-            if (Math.Abs(_knockbackVelocity) <= 0.1)
-            {
-                _knockbackVelocity = 0;
-                return;
-            }
-
-            X = ClampStageX(X + _knockbackVelocity * dt);
-
-            double decel = KnockbackFriction * dt;
-            if (Math.Abs(_knockbackVelocity) <= decel)
-                _knockbackVelocity = 0;
-            else
-                _knockbackVelocity -= Math.Sign(_knockbackVelocity) * decel;
         }
 
         private bool IsStandingOnSurface() => Math.Abs(FeetY - GroundY) <= 2;
@@ -521,32 +385,62 @@ namespace BleachVsNarutoMini.Entities
             var want = dir != 0 ? FighterState.Run : FighterState.Idle;
             if (want != State) SetState(want);
 
-            if (State == FighterState.Run)
-            {
-                SetImage($"{_cfg.RunPrefix}{_cfg.RunStart + _frame}.png");
-                Advance(_cfg.RunFrames, RunFrameTime, true, dt);
-            }
-            else SetImage(_cfg.Idle);
+            var clip = State == FighterState.Run ? _cfg.Run : _cfg.Idle;
+            SetClipImage(clip, _frame);
+            Advance(clip.Count, clip.FrameTime, true, dt);
         }
 
         private void UpdateJump(double dt)
         {
-            _vy += Gravity * dt; Y += _vy * dt;
-            if (FeetY >= GroundY) { Y = GroundY - Height + _cfg.FootPadding; _vy = 0; SetState(FighterState.Idle); return; }
+            _vy += Gravity * dt;
+            Y += _vy * dt;
+            if (FeetY >= GroundY)
+            {
+                Y = GroundY - Height + _cfg.FootPadding;
+                _vy = 0;
+                SetState(FighterState.Idle);
+                return;
+            }
 
             double t = Math.Clamp((_vy - JumpPower) / (-2 * JumpPower), 0, 0.999);
-            SetImage($"{_cfg.JumpPrefix}{(int)(t * _cfg.JumpFrames) + 1}.png");
+            int idx = (int)(t * _cfg.Jump.Count);
+            SetClipImage(_cfg.Jump, idx);
+        }
+
+        private void UpdateAirAction(AnimClip clip, bool spawnShuriken, double dt)
+        {
+            _vy += Gravity * dt;
+            Y += _vy * dt;
+            if (FeetY >= GroundY)
+            {
+                Y = GroundY - Height + _cfg.FootPadding;
+                _vy = 0;
+            }
+
+            SetClipImage(clip, _frame);
+
+            if (spawnShuriken && _frame >= clip.Count - 1 && !_hasSpawnedSkillObj)
+            {
+                _hasSpawnedSkillObj = true;
+                SpawnShuriken();
+            }
+
+            if (Advance(clip.Count, clip.FrameTime, false, dt))
+            {
+                SetState(IsStandingOnSurface() ? FighterState.Idle : FighterState.Jump);
+            }
         }
 
         private void UpdateDash(double dt)
         {
             double dashDir = FacingRight ? 1 : -1;
             double step = Math.Min(DashSpeed * dt, DashDistance - _dashedDistance);
-            X = ClampStageX(X + dashDir * step);
+            X = Math.Clamp(X + dashDir * step, 20 - BodyOffsetX, StageWidth - 20 - BodyW - BodyOffsetX);
             _dashedDistance += step;
 
-            SetImage($"{_cfg.RunPrefix}{_cfg.RunStart + _frame}.png");
-            Advance(_cfg.RunFrames, 0.04, true, dt);
+            var dashClip = _cfg.Dash.HasFrames ? _cfg.Dash : _cfg.Run;
+            SetClipImage(dashClip, _frame);
+            Advance(dashClip.Count, dashClip.FrameTime, true, dt);
 
             if (_dashedDistance >= DashDistance)
             {
@@ -555,84 +449,139 @@ namespace BleachVsNarutoMini.Entities
             }
         }
 
+        private void UpdateBlock(double dt)
+        {
+            SetClipImage(_cfg.Block, _frame);
+            if (_cfg.Block.Count > 1)
+                Advance(_cfg.Block.Count, _cfg.Block.FrameTime, false, dt);
+
+            if (!InputManager.IsKeyDown(_block))
+                SetState(FighterState.Idle);
+        }
+
         private void UpdateAttack(double dt)
         {
-            if (_frame != _lastAttackSteppedFrame)
-            {
-                _lastAttackSteppedFrame = _frame;
-                double stepDir = FacingRight ? 1 : -1;
-                X = ClampStageX(X + stepDir * AttackStepDistance);
-            }
-
-            int total = _combo ? _cfg.AttackFrames : _cfg.ComboSplitFrame;
-            SetImage($"{_cfg.AttackPrefix}{_frame + 1}.png");
-            if (Advance(total, _cfg.AttackFrameTime, false, dt))
-            {
-                _attackCooldownTimer = AttackCooldown;
+            int total = _combo ? _cfg.Attack.Count : Math.Min(_cfg.ComboSplitFrame, _cfg.Attack.Count);
+            SetClipImage(_cfg.Attack, _frame);
+            if (Advance(total, _cfg.Attack.FrameTime, false, dt))
                 SetState(FighterState.Idle);
-            }
         }
 
         private void UpdateThrow(double dt)
         {
-            SetImage($"{_cfg.ThrowPrefix}{_frame + 1}.png");
+            SetClipImage(_cfg.Throw, _frame);
 
-            if (_frame >= _cfg.ThrowFrames - 1 && !_hasThrown)
+            if (_frame >= _cfg.Throw.Count - 1 && !_hasSpawnedSkillObj)
             {
-                _hasThrown = true;
-                double spawnX = FacingRight ? (BodyX + BodyW) : (BodyX - 30);
-                var proj = new Projectile(this, "sskanhphitieu", spawnX, BodyTop + 20, 30, 30, 600, _cfg.ThrowDamage, FacingRight);
-                OnSpawnProjectile?.Invoke(proj);
+                _hasSpawnedSkillObj = true;
+                SpawnShuriken();
             }
 
-            if (Advance(_cfg.ThrowFrames, 0.08, false, dt)) SetState(FighterState.Idle);
+            if (Advance(_cfg.Throw.Count, _cfg.Throw.FrameTime, false, dt))
+                SetState(FighterState.Idle);
+        }
+
+        private void UpdateSpecial1(double dt)
+        {
+            SetClipImage(_cfg.Special1, _frame);
+
+            // Nếu nhân vật có đạn hiệu ứng cho Special 1 (như chiêu Phun Lửa của Sasuke)
+            if (!string.IsNullOrEmpty(_cfg.Special1ProjectilePrefix)
+                && _frame >= _cfg.Special1SpawnFrame && !_hasSpawnedSkillObj)
+            {
+                _hasSpawnedSkillObj = true;
+                double spawnX = FacingRight ? (BodyX + BodyW) : (BodyX - 85);
+                var fireProj = new Projectile(
+                    this, _cfg.Special1ProjectilePrefix,
+                    spawnX, BodyTop + 10, 85, 65, 520, _cfg.Special1Damage, FacingRight,
+                    _cfg.Special1ProjectileFrames, 0.06, knockdown: true);
+                OnSpawnProjectile?.Invoke(fireProj);
+            }
+
+            if (Advance(_cfg.Special1.Count, _cfg.Special1.FrameTime, false, dt))
+                SetState(FighterState.Idle);
         }
 
         private void UpdateUltimate(double dt)
         {
-            SetImage($"{_cfg.UltimatePrefix}{_frame + 1}.png");
+            SetClipImage(_cfg.Ultimate, _frame);
 
-            int chargeFrames = _cfg.UltimateChargeFrames > 0 ? _cfg.UltimateChargeFrames : _cfg.UltimateFrames / 2;
-            if (_frame >= chargeFrames && !_ultHasHit && _ultDashedDistance < _cfg.UltimateDashDistance)
+            int chargeFrames = _cfg.UltimateChargeFrames > 0 ? _cfg.UltimateChargeFrames : _cfg.Ultimate.Count / 2;
+            if (_frame >= chargeFrames && !_skillHasHit && _ultDashedDistance < _cfg.UltimateDashDistance)
             {
                 double dir = FacingRight ? 1 : -1;
                 double step = Math.Min(_cfg.UltimateDashSpeed * dt, _cfg.UltimateDashDistance - _ultDashedDistance);
-                X = ClampStageX(X + dir * step);
+                X = Math.Clamp(X + dir * step, 20 - BodyOffsetX, StageWidth - 20 - BodyW - BodyOffsetX);
                 _ultDashedDistance += step;
             }
 
-            if (Advance(_cfg.UltimateFrames, 0.08, false, dt)) SetState(FighterState.Idle);
+            if (Advance(_cfg.Ultimate.Count, _cfg.Ultimate.FrameTime, false, dt))
+                SetState(FighterState.Idle);
         }
 
-        private void UpdateBlock()
+        private void UpdateOneShotClip(AnimClip clip, double dt)
         {
-            int dir = (InputManager.IsKeyDown(_right) ? 1 : 0) - (InputManager.IsKeyDown(_left) ? 1 : 0);
-            if (dir != 0) FacingRight = dir > 0;
-
-            SetImage(_cfg.BlockImage);
-            if (!InputManager.IsKeyDown(_block) || Guard <= 0) SetState(FighterState.Idle);
+            if (!clip.HasFrames) { SetState(FighterState.Idle); return; }
+            SetClipImage(clip, _frame);
+            if (Advance(clip.Count, clip.FrameTime, false, dt))
+                SetState(FighterState.Idle);
         }
 
         private void UpdateHurt(double dt)
         {
-            SetImage($"{_cfg.HurtPrefix}1.png");
-            if (Advance(1, _hurtDuration, false, dt)) SetState(FighterState.Idle);
+            SetClipImage(_cfg.Hurt, _frame);
+            Advance(_cfg.Hurt.Count, _cfg.Hurt.FrameTime, false, dt);
+
+            _stateHoldTimer += dt;
+            if (_stateHoldTimer >= _hurtDuration)
+                SetState(FighterState.Idle);
+        }
+
+        private void UpdateKnockdown(double dt)
+        {
+            if (FeetY < GroundY) { _vy += Gravity * dt; Y += _vy * dt; }
+            else { Y = GroundY - Height + _cfg.FootPadding; _vy = 0; }
+
+            SetClipImage(_cfg.Knockdown, _frame);
+            bool finishedAnim = Advance(_cfg.Knockdown.Count, _cfg.Knockdown.FrameTime, false, dt);
+
+            _stateHoldTimer += dt;
+            if (finishedAnim && _stateHoldTimer >= _hurtDuration)
+                SetState(_cfg.GetUp.HasFrames ? FighterState.GetUp : FighterState.Idle);
         }
 
         private void UpdateDead(double dt)
         {
-            UpdateKnockback(dt);
             if (FeetY < GroundY) { _vy += Gravity * dt; Y += _vy * dt; }
             else Y = GroundY - Height + _cfg.FootPadding;
 
-            SetImage($"{_cfg.HurtPrefix}{_frame + 1}.png");
-            Advance(_cfg.DeadFrames, 0.15, false, dt);
+            var deadClip = _cfg.Knockdown.HasFrames ? _cfg.Knockdown : _cfg.Hurt;
+            SetClipImage(deadClip, _frame);
+            Advance(deadClip.Count, 0.14, false, dt);
+        }
+
+        private void SpawnShuriken()
+        {
+            double spawnX = FacingRight ? (BodyX + BodyW) : (BodyX - 30);
+            var proj = new Projectile(this, ShurikenPrefix, spawnX, BodyTop + 20, 30, 30, 600, _cfg.ThrowDamage, FacingRight, 5, 0.05);
+            OnSpawnProjectile?.Invoke(proj);
         }
 
         private bool Advance(int count, double time, bool loop, double dt)
         {
+            if (count <= 1) return true;
             _timer += dt;
-            while (_timer >= time) { _timer -= time; _frame++; if (loop) _frame %= count; else if (_frame >= count) { _frame = count - 1; return true; } }
+            while (_timer >= time)
+            {
+                _timer -= time;
+                _frame++;
+                if (loop) _frame %= count;
+                else if (_frame >= count)
+                {
+                    _frame = count - 1;
+                    return true;
+                }
+            }
             return false;
         }
 
@@ -645,39 +594,52 @@ namespace BleachVsNarutoMini.Entities
 
         private void SetState(FighterState s)
         {
-            if (State == FighterState.Ultimate && s != FighterState.Ultimate)
-                _ultCooldownTimer = UltCooldown;
-
-            if (State == FighterState.Throw && s != FighterState.Throw)
-            {
-                if (_consecutiveThrows >= MaxConsecutiveThrows)
-                {
-                    _throwCooldownTimer = ThrowCooldown;
-                    _consecutiveThrows = 0;
-                }
-                else
-                {
-                    _throwComboResetTimer = ThrowCooldown;
-                }
-            }
-
-            if (s == FighterState.Dead)
-                _guardVisibleTimer = 0;
-
-            if (s == FighterState.Dash || s == FighterState.Ultimate)
-            {
-                _knockbackVelocity = 0;
-                _pendingKnockbackVelocity = 0;
-                _knockbackDelayTimer = 0;
-            }
-
-            State = s; _frame = 0; _timer = 0; _lastHitFrame = -1; _lastAttackSteppedFrame = -1; _combo = false;
-            _hasThrown = false;
-            _ultHasHit = false;
+            State = s;
+            _frame = 0;
+            _timer = 0;
+            _stateHoldTimer = 0;
+            _lastHitFrame = -1;
+            _combo = false;
+            _hasSpawnedSkillObj = false;
+            _skillHasHit = false;
             _ultDashedDistance = 0;
             _dashedDistance = 0;
+
+            if (s == FighterState.Dash && _cfg.DashEffect is { HasFrames: true } dashFx)
+                SpawnEffect(dashFx, FighterState.Dash);
+            else if (s == FighterState.Ultimate && _cfg.UltimateBackEffect is { HasFrames: true } ultFx)
+                SpawnEffect(ultFx, FighterState.Ultimate);
         }
-        private void SetImage(string f) { if (f == _currentFile) return; _currentFile = f; Sprite.Source = ImageCache.Get(f); }
-        private void Draw() { Canvas.SetLeft(Sprite, X); Canvas.SetTop(Sprite, Y); _flip.ScaleX = FacingRight ? 1 : -1; }
+
+        private void SpawnEffect(EffectConfig fx, FighterState activeState)
+        {
+            double dir = FacingRight ? 1 : -1;
+            double centerX = X + Width / 2 + fx.OffsetX * dir;
+            double targetY = (fx.IsCenterY ? (Y + Height / 2) : FeetY) + fx.OffsetY;
+
+            var effect = new DustEffect(
+                fx.Prefix, fx.Start, fx.Frames, fx.FrameTime,
+                centerX, targetY, fx.Width, fx.Height,
+                fx.IsCenterY, fx.GroundOffsetY,
+                FacingRight, fx.ZIndex,
+                fx.FollowOwner ? this : null, activeState, fx.OffsetX, fx.OffsetY, fx.Loop);
+
+            OnSpawnEffect?.Invoke(effect);
+        }
+        private void SetClipImage(AnimClip clip, int frameIndex)
+        {
+            if (!clip.HasFrames) return;
+            string f = clip.GetFile(frameIndex);
+            if (f == _currentFile) return;
+            _currentFile = f;
+            Sprite.Source = ImageCache.Get(f);
+        }
+
+        private void Draw()
+        {
+            Canvas.SetLeft(Sprite, X);
+            Canvas.SetTop(Sprite, Y);
+            _flip.ScaleX = FacingRight ? 1 : -1;
+        }
     }
 }

@@ -6,55 +6,59 @@ namespace BleachVsNarutoMini.Entities
     {
         private static readonly FighterConfig Config = new()
         {
-            Idle = "narutodung.png",
-            RunPrefix = "narutochay",
-            RunStart = 1,
-            RunFrames = 6,
-            JumpPrefix = "narutonhay",
-            JumpFrames = 5,
+            Idle = new AnimClip { Prefix = "Naruto/dung/narutodung", Start = 1, Frames = 6, FrameTime = 0.12 },
+            Run = new AnimClip { Prefix = "Naruto/chay/narutochay", Start = 1, Frames = 6, FrameTime = 0.08 },
+            Jump = new AnimClip { Prefix = "Naruto/nhay/narutonhay", Start = 1, Frames = 5, FrameTime = 0.10 },
+            Dash = new AnimClip { Prefix = "Naruto/dichchuyen/narutodichchuyen", Start = 1, Frames = 2, FrameTime = 0.06 },
+            Block = new AnimClip { Prefix = "Naruto/thuthe/narutongoi", Start = 1, Frames = 4, FrameTime = 0.08 },
 
-            // Logic Combo: Đánh thường đến frame 4, nếu bấm tiếp sẽ chạy đến 12
-            AttackPrefix = "narutodanh",
-            ComboSplitFrame = 4,
-            AttackFrames = 12,
-            AttackFrameTime = 0.06,
+            Attack = new AnimClip { Prefix = "Naruto/danhthuong/narutodanh", Start = 1, Frames = 17, FrameTime = 0.06 },
+            ComboSplitFrame = 5,
+            JumpAttack = new AnimClip { Prefix = "Naruto/nhaydanh/narutonhaydanh", Start = 1, Frames = 9, FrameTime = 0.06 },
+            CrouchAttack = new AnimClip { Prefix = "Naruto/ngoidanh/narutongoidanh", Start = 1, Frames = 4, FrameTime = 0.07 },
 
-            ThrowPrefix = "narutonemvukhi",
-            ThrowFrames = 4,
+            Throw = new AnimClip { Prefix = "Naruto/nemphitieu/narutonemphitieu", Start = 1, Frames = 4, FrameTime = 0.07 },
+            JumpThrow = new AnimClip { Prefix = "Naruto/nhaynemphitieu/narutonhaynemphitieu", Start = 1, Frames = 3, FrameTime = 0.07 },
 
-            UltimatePrefix = "narutochuanbitungchieu",
-            UltimateFrames = 31,
+            Special1 = new AnimClip { Prefix = "Naruto/danhdacbiet/narutodanhdacbiet", Start = 1, Frames = 18, FrameTime = 0.06 },
+            Special2 = new AnimClip { Prefix = "Naruto/chieudacbiet/narutodacbiet", Start = 1, Frames = 15, FrameTime = 0.07 },
+            Ultimate = new AnimClip { Prefix = "Naruto/rasengan/narutorasengan", Start = 1, Frames = 45, FrameTime = 0.06 },
 
-            BlockImage = "narutophongthu.png",
-
-            HurtPrefix = "narutobithuong",
-            DeadFrames = 6,
-
-            // [Phát thêm] Chỉ số sát thương riêng của Naruto (Chiêu cuối mạnh và tầm rộng hơn)
+            Hurt = new AnimClip { Prefix = "Naruto/bidanh/narutobidanh", Start = 1, Frames = 2, FrameTime = 0.10 },
+            Knockdown = new AnimClip { Prefix = "Naruto/bidanhlientiep/narutobidanh", Start = 1, Frames = 4, FrameTime = 0.10 },
+            GetUp = new AnimClip { Prefix = "Naruto/ngoiday/narutongoiday", Start = 1, Frames = 3, FrameTime = 0.10 },
+            DashEffect = new EffectConfig
+            {
+                Prefix = "Assets/effect/HieuUngNaruto/narutoHUdichchuyen",
+                Frames = 4,
+                FrameTime = 0.06,
+                Width = 110,
+                Height = 110,
+                IsCenterY = true,
+                ZIndex = 2
+            },
             AttackDamage = 5,
+            CrouchAttackDamage = 10,
+            JumpAttackDamage = 8,
             ThrowDamage = 12,
+            Special1Damage = 24,
+            Special2Damage = 28,
             UltimateDamage = 40,
             UltimateReach = 35,
 
-            // [Phát thêm] Gồng Rasengan 16 frame đầu, sau đó chạy tới áp sát đối phương
             UltimateChargeFrames = 16,
             UltimateDashSpeed = 950,
             UltimateDashDistance = 420,
 
-            // Các thông số giữ nguyên...
-
-            // Sửa lại đoạn kích thước này:
-            Width = 100,           // Cũ là 170, sửa thành 100 bằng Sasuke
-            Height = 110,          // Cũ là 170, sửa thành 110 bằng Sasuke
+            Width = 100,
+            Height = 110,
             BodyWidthRatio = 0.5,
-            AttackReach = 25,      // Tầm đánh cũng nên giảm xuống cho cân bằng
+            AttackReach = 25,
             GroundBottom = 620,
-            FootPadding = 15,      // Cũ là 48, hạ xuống tầm 15-20 (tùy bạn test thấy chân vừa chạm đất)
+            FootPadding = 15,
             StartFacingRight = true
         };
 
-        // Gán phím: Trái(A), Phải(D), Nhảy(K), Đánh(J), Đỡ(S), Phi tiêu(U), Chiêu cuối(I), Lướt(L), Tốc biến(O)
-        // [Phát thêm] Truyền thêm Key.L làm nút lướt và Key.O làm nút tốc biến của Naruto
-        public Naruto() : base(100, Config, Key.A, Key.D, Key.K, Key.J, Key.S, Key.U, Key.I, Key.L, Key.O) { }
+        public Naruto() : base(100, Config, Key.A, Key.D, Key.K, Key.J, Key.S, Key.U, Key.I, Key.L) { }
     }
 }

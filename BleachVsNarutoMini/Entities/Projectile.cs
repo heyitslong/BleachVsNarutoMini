@@ -1,7 +1,7 @@
-﻿using System.Windows;
+﻿using System.Collections.Generic;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using System.Collections.Generic;
 
 namespace BleachVsNarutoMini.Entities
 {
@@ -10,6 +10,9 @@ namespace BleachVsNarutoMini.Entities
         private readonly int _dir;
         private readonly ScaleTransform _flip;
         private readonly string _baseFile;
+        private readonly int _maxFrames;
+        private readonly double _frameTime;
+        private readonly bool _knockdown;
         private double _animTimer;
         private int _animFrame = 1;
 
@@ -19,13 +22,27 @@ namespace BleachVsNarutoMini.Entities
         public bool IsActive { get; private set; } = true;
         public Rect Bounds => new(X, Y, Width, Height);
 
-        public Projectile(Fighter owner, string baseImage, double x, double y, double w, double h, double spd, int dmg, bool facingRight)
+        public Projectile(
+            Fighter owner, string baseImage, double x, double y, double w, double h,
+            double spd, int dmg, bool facingRight, int maxFrames = 5, double frameTime = 0.05, bool knockdown = false)
             : base(x, y, w, h, spd)
         {
-            Owner = owner; Damage = dmg; _baseFile = baseImage;
-            _dir = facingRight ? 1 : -1; _flip = new ScaleTransform(_dir, 1);
+            Owner = owner;
+            Damage = dmg;
+            _baseFile = baseImage;
+            _maxFrames = maxFrames;
+            _frameTime = frameTime;
+            _knockdown = knockdown;
+            _dir = facingRight ? 1 : -1;
+            _flip = new ScaleTransform(_dir, 1);
 
-            Sprite = new Image { Width = w, Height = h, RenderTransform = _flip, RenderTransformOrigin = new Point(0.5, 0.5) };
+            Sprite = new Image
+            {
+                Width = w,
+                Height = h,
+                RenderTransform = _flip,
+                RenderTransformOrigin = new Point(0.5, 0.5)
+            };
             RenderOptions.SetBitmapScalingMode(Sprite, BitmapScalingMode.NearestNeighbor);
             Sprite.Source = ImageCache.Get($"{_baseFile}{_animFrame}.png");
             Draw();
@@ -36,21 +53,28 @@ namespace BleachVsNarutoMini.Entities
             if (!IsActive) return;
             X += _dir * Speed * dt;
 
-            // Hoạt ảnh xoay phi tiêu (từ 1 đến 5)
             _animTimer += dt;
-            if (_animTimer >= 0.05)
+            if (_animTimer >= _frameTime)
             {
-                _animTimer -= 0.05;
+                _animTimer -= _frameTime;
                 _animFrame++;
-                if (_animFrame > 5) _animFrame = 1;
+                if (_animFrame > _maxFrames) _animFrame = 1;
                 Sprite.Source = ImageCache.Get($"{_baseFile}{_animFrame}.png");
             }
             Draw();
 
-            if (X < 0 || X + Width > stageWidth) { IsActive = false; return; }
-            if (!target.IsDead && Bounds.IntersectsWith(target.Bounds)) { target.TakeDamage(Damage); IsActive = false; return; }
+            if (X < -Width || X > stageWidth + Width) { IsActive = false; return; }
+            if (!target.IsDead && Bounds.IntersectsWith(target.Bounds))
+            {
+                target.TakeDamage(Damage, _knockdown ? 0.5 : 0.3, _knockdown);
+                IsActive = false;
+            }
         }
 
-        private void Draw() { Canvas.SetLeft(Sprite, X); Canvas.SetTop(Sprite, Y); }
+        private void Draw()
+        {
+            Canvas.SetLeft(Sprite, X);
+            Canvas.SetTop(Sprite, Y);
+        }
     }
 }

@@ -6,44 +6,73 @@ namespace BleachVsNarutoMini.Entities
     {
         private static readonly FighterConfig Config = new()
         {
-            Idle = "sskdung1.png",
+            Idle = new AnimClip { Prefix = "Sasuke/dung/sasukedung", Start = 1, Frames = 4, FrameTime = 0.12 },
+            Run = new AnimClip { Prefix = "Sasuke/chay/sasukechay", Start = 1, Frames = 11, FrameTime = 0.06 },
+            Jump = new AnimClip { Prefix = "Sasuke/nhay/sasukenhay", Start = 1, Frames = 4, FrameTime = 0.10 },
+            Dash = new AnimClip { Prefix = "Sasuke/dichchuyen/sasukedichchuyen", Start = 1, Frames = 2, FrameTime = 0.06 },
+            Block = new AnimClip { Prefix = "Sasuke/thuthe/sasukethuthe.png", Frames = 1 },
 
-            RunPrefix = "sskchay",
-            RunStart = 1,
-            RunFrames = 6,
+            Attack = new AnimClip { Prefix = "Sasuke/danhthuong/sasukedanh", Start = 1, Frames = 18, FrameTime = 0.06 },
+            ComboSplitFrame = 5,
+            JumpAttack = new AnimClip { Prefix = "Sasuke/nhaydanh/sasukenhaydanh", Start = 1, Frames = 7, FrameTime = 0.06 },
+            CrouchAttack = new AnimClip { Prefix = "Sasuke/danhdacbiet/sasukedanhdacbiet", Start = 1, Frames = 8, FrameTime = 0.06 },
 
-            JumpPrefix = "ssknhay",
-            JumpFrames = 6,
+            Throw = new AnimClip { Prefix = "Sasuke/phongphitieu/sasukephongphitieu", Start = 1, Frames = 3, FrameTime = 0.07 },
 
-            // Logic Combo: Nhấp Z 1 lần đánh tới frame 3, nhấp liên tục ra combo tới frame 7
-            AttackPrefix = "sskdanh",
-            ComboSplitFrame = 3,
-            AttackFrames = 7,
-            AttackFrameTime = 0.08,
+            Special1 = new AnimClip { Prefix = "Sasuke/phunlua/sasukephunlua", Start = 1, Frames = 20, FrameTime = 0.06 },
+            Special1ProjectilePrefix = "Assets/effect/HieuUngSasuke/sasukePhunLua/sasukelua",
+            Special1ProjectileFrames = 10,
+            Special1SpawnFrame = 8,
 
-            // Ném phi tiêu: Dùng ảnh ngồi dậy (chỉ có 2 frame)
-            ThrowPrefix = "sskngoiday",
-            ThrowFrames = 2,
+            Special2 = new AnimClip { Prefix = "Sasuke/dungchieudacbiet/sasukedacbiet", Start = 1, Frames = 23, FrameTime = 0.06 },
+            Ultimate = new AnimClip { Prefix = "Sasuke/chidori/sasukechidori", Start = 1, Frames = 54, FrameTime = 0.06 },
 
-            // Chiêu cuối (Chidori/Lửa)
-            UltimatePrefix = "sskchieu",
-            UltimateFrames = 22,
-
-            // Phòng thủ
-            BlockImage = "sskphongthu.png",
-
-            // Bị thương & Chết
-            HurtPrefix = "sskbidanh",
-            DeadFrames = 8, // Chết lăn ra đủ 8 frame
-
-            // [Phát thêm] Chỉ số sát thương riêng của Sasuke (Đánh thường và phi tiêu nhỉnh hơn Naruto)
-            AttackDamage = 5,
+            Hurt = new AnimClip { Prefix = "Sasuke/bidanh/sasukenga", Start = 2, Frames = 2, FrameTime = 0.10 },
+            Knockdown = new AnimClip { Prefix = "Sasuke/khibidanhlientiep/sasukenga", Start = 2, Frames = 6, FrameTime = 0.10 },
+            GetUp = new AnimClip
+            {
+                CustomFiles = new[]
+                {
+                    "Sasuke/ngoiday/sasukenga7-2.png",
+                    "Sasuke/ngoiday/sasukedung.png"
+                },
+                FrameTime = 0.12
+            },
+            DashEffect = new EffectConfig
+            {
+                Prefix = "Assets/effect/khiNhanVatChayNhanh/bui",
+                Frames = 7,
+                FrameTime = 0.05,
+                Width = 160,
+                Height = 55,
+                IsCenterY = false,
+                GroundOffsetY = 20,
+                ZIndex = 0
+            },
+            UltimateBackEffect = new EffectConfig
+            {
+                Prefix = "Assets/effect/HieuUngSasuke/sét/sasukeset",
+                Frames = 4,
+                FrameTime = 0.07,
+                Width = 190,
+                Height = 160,
+                IsCenterY = true,
+                OffsetX = -15,
+                OffsetY = -10,
+                ZIndex = -1,
+                FollowOwner = true,
+                Loop = true
+            },
+            AttackDamage = 6,
+            CrouchAttackDamage = 12,
+            JumpAttackDamage = 8,
             ThrowDamage = 18,
+            Special1Damage = 25,
+            Special2Damage = 28,
             UltimateDamage = 32,
             UltimateReach = 30,
 
-            // [Phát thêm] Gồng Chidori 11 frame đầu, sau đó lao cực nhanh tới áp sát đối phương
-            UltimateChargeFrames = 11,
+            UltimateChargeFrames = 20,
             UltimateDashSpeed = 1150,
             UltimateDashDistance = 460,
 
@@ -56,9 +85,6 @@ namespace BleachVsNarutoMini.Entities
             StartFacingRight = false
         };
 
-
-        // Thứ tự: Trái, Phải, Nhảy, Đánh, Đỡ, Ném, Chiêu cuối, Lướt(3), Tốc biến(6)
-        // [Phát thêm] Truyền thêm Key.D3 làm nút lướt và Key.D6 làm nút tốc biến của Sasuke
-        public Sasuke() : base(830, Config, Key.Left, Key.Right, Key.D2, Key.D1, Key.Down, Key.D4, Key.D5, Key.D3, Key.D6) { }
+        public Sasuke() : base(830, Config, Key.Left, Key.Right, Key.D2, Key.D1, Key.Down, Key.D4, Key.D5, Key.D3) { }
     }
 }
