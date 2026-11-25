@@ -22,7 +22,6 @@ namespace BleachVsNarutoMini.UI
         public int Throw { get; set; }        // sát thương phi tiêu
         public int Ult { get; set; }          // sát thương chiêu cuối
     }
-
     //  TIỆN ÍCH: nạp ảnh, chữ có viền
     internal static class MenuKit
     {
@@ -32,15 +31,29 @@ namespace BleachVsNarutoMini.UI
         private static readonly Dictionary<string, ImageSource> Cache = new Dictionary<string, ImageSource>();
 
         // Nạp ảnh; không có ảnh thì trả về null (menu vẫn chạy bình thường).
+        // Tự tìm ảnh ở nhiều chỗ nên ảnh nằm thư mục con nào cũng được.
         public static ImageSource LoadImage(string file)
         {
             ImageSource img;
             if (Cache.TryGetValue(file, out img)) return img;
 
-            //  đường dẫn mặc định (Assets/tên_ảnh)
-            img = TryLoad(new Uri("pack://application:,,,/" + AssetFolder + file, UriKind.Absolute));
+            // Cách 0: dùng chính ImageCache của game, nên đường dẫn luôn khớp với ảnh nhân vật trong trận
+            try { img = BleachVsNarutoMini.Entities.ImageCache.Get(file); }
+            catch { img = null; }
+            if (img != null)
+            {
+                Cache[file] = img;
+                return img;
+            }
 
-            //  tự tìm ảnh trong các resource đã đóng gói, bất kể nằm thư mục con nào
+            // đường dẫn mặc định (AssetFolder + tên_ảnh)
+            // (nếu file đã ghi đủ đường dẫn bắt đầu bằng "Assets/" thì dùng luôn)
+            string path = file.StartsWith("Assets/", StringComparison.OrdinalIgnoreCase)
+                ? file
+                : AssetFolder + file;
+            img = TryLoad(new Uri("pack://application:,,,/" + path, UriKind.Absolute));
+
+            // tự tìm ảnh trong các resource đã đóng gói, bất kể nằm thư mục con nào
             if (img == null)
             {
                 string key = FindResourceKey(file);
@@ -167,7 +180,8 @@ namespace BleachVsNarutoMini.UI
         }
     }
 
-    //  NHÓM THẺ BẤM (thay cho RadioButton): chọn 1 trong nhiều thẻ, thẻ được chọn có viền vàng phát sáng và phóng nhẹ lên
+    //  NHÓM THẺ BẤM (thay cho RadioButton): chọn 1 trong nhiều thẻ,
+    //  thẻ được chọn có viền vàng phát sáng và phóng nhẹ lên.
     internal class CardGroup
     {
         private static readonly Brush NormalBg = new SolidColorBrush(Color.FromArgb(0x33, 255, 255, 255));
@@ -393,17 +407,18 @@ namespace BleachVsNarutoMini.UI
             parent.Children.Add(grid);
         }
     }
-    //  MÀN HÌNH MENU: CHỌN TƯỚNG 
-       public class MainMenuView : UserControl
+    //  MÀN HÌNH MENU: CHỌN TƯỚNG ĐỐI KHÁNG
+        public class MainMenuView : UserControl
     {
-        // DANH SÁCH NHÂN VẬT
+        private const string AvatarFolder = "Assets/Images/Avatar/";
         // Muốn thêm nhân vật mới: thêm một dòng vào đây (và một nhánh trong GameWindow.CreateFighter).
+        // Image = AvatarFolder + "tên_file.png" (ảnh nằm trong thư mục Avatar)
         public static readonly CharacterInfo[] CharacterList =
         {
-            new CharacterInfo { Id = "Naruto", Name = "Naruto", Image = "narutodung.png",
+            new CharacterInfo { Id = "Naruto", Name = "Naruto", Image = AvatarFolder + "naruto.png",
                                 Special = "Rasengan", Attack = 5, Throw = 12, Ult = 40 },
-            new CharacterInfo { Id = "Sasuke", Name = "Sasuke", Image = "sskdung1.png",
-                                Special = "Chidori", Attack = 5, Throw = 18, Ult = 32 }
+            new CharacterInfo { Id = "Sasuke", Name = "Sasuke", Image = AvatarFolder + "sasuke.png",
+                                Special = "Chidori", Attack = 6, Throw = 18, Ult = 32 }
         };
 
         // Đổi id ("Naruto") sang tên hiển thị
@@ -429,7 +444,7 @@ namespace BleachVsNarutoMini.UI
         public MainMenuView(string lastP1 = "Naruto", string lastP2 = "Sasuke",
                             string lastMap = "Arena1", int lastSeconds = 60)
         {
-            // Nền: ảnh menu_bg.png phủ lớp mờ
+            // Nền: ảnh menu_bg.png phủ lớp mờ; không có ảnh thì dùng nền đen mờ 
             var root = new Grid();
             var bg = MenuKit.LoadImage("menu_bg.png");
             if (bg != null)
@@ -458,7 +473,7 @@ namespace BleachVsNarutoMini.UI
             title.Margin = new Thickness(0, 0, 0, 10);
             panel.Children.Add(title);
 
-            //  Hai cột người chơi + chữ VS ở giữa
+            // Hai cột người chơi + chữ VS ở giữa
             _p1 = new PlayerPanel("NGƯỜI CHƠI 1", Color.FromRgb(0x4F, 0xC3, 0xF7), lastP1, CharacterList);
             _p2 = new PlayerPanel("NGƯỜI CHƠI 2", Color.FromRgb(0xEF, 0x53, 0x50), lastP2, CharacterList);
 
@@ -480,7 +495,7 @@ namespace BleachVsNarutoMini.UI
             cols.Children.Add(_p2.Root);
             panel.Children.Add(cols);
 
-            //  Hàng dưới: đấu trường (ảnh thu nhỏ) + thời gian 
+            // Hàng dưới: đấu trường (ảnh thu nhỏ) + thời gian 
             var options = new StackPanel
             {
                 Orientation = Orientation.Horizontal,
