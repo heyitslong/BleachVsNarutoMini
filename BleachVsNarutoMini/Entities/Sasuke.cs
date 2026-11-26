@@ -7,7 +7,7 @@ namespace BleachVsNarutoMini.Entities
         private static readonly FighterConfig Config = new()
         {
             Idle = new AnimClip { Prefix = "Sasuke/dung/sasukedung", Start = 1, Frames = 4, FrameTime = 0.12 },
-            Run = new AnimClip { Prefix = "Sasuke/chay/sasukechay", Start = 1, Frames = 11, FrameTime = 0.06 },
+            Run = new AnimClip { Prefix = "Sasuke/chay/sasukechay", Start = 1, Frames = 11, FrameTime = 0.055 },
             Jump = new AnimClip { Prefix = "Sasuke/nhay/sasukenhay", Start = 1, Frames = 4, FrameTime = 0.10 },
             Dash = new AnimClip { Prefix = "Sasuke/dichchuyen/sasukedichchuyen", Start = 1, Frames = 2, FrameTime = 0.06 },
             Block = new AnimClip { Prefix = "Sasuke/thuthe/sasukethuthe.png", Frames = 1 },
@@ -24,7 +24,18 @@ namespace BleachVsNarutoMini.Entities
             Special1ProjectileFrames = 10,
             Special1SpawnFrame = 8,
 
-            Special2 = new AnimClip { Prefix = "Sasuke/chieudacbiet/sasukedacbiet", Start = 1, Frames = 23, FrameTime = 0.06 },
+            Special2 = new AnimClip
+            {
+                Prefix = "Sasuke/chieudacbiet/sasukedacbiet",
+                Start = 1,
+                Frames = 23,
+                FrameTime = 0.065,
+                FrameOffsetsY = new double[]
+                {
+                    2, 4, 5, -8, -10, 0, -4, -4, -4, -4, -2, -4,
+                    -8, 0, 4, -6, -2, 0, 2, -6, 6, 2, 0
+                }
+            },
             Ultimate = new AnimClip { Prefix = "Sasuke/chidori/sasukechidori", Start = 1, Frames = 54, FrameTime = 0.06 },
 
             Hurt = new AnimClip { Prefix = "Sasuke/bidanh/sasukenga", Start = 2, Frames = 2, FrameTime = 0.10 },
@@ -34,7 +45,7 @@ namespace BleachVsNarutoMini.Entities
                 Start = 2,
                 Frames = 6,
                 FrameTime = 0.11,
-                FrameOffsetsY = new double[] { 0, 0, 19, 20, 20, 20 } // Thu nhỏ theo tỷ lệ 85%
+                FrameOffsetsY = new double[] { 0, 0, 23, 24, 24, 24 }
             },
             GetUp = new AnimClip
             {
@@ -70,12 +81,12 @@ namespace BleachVsNarutoMini.Entities
                 FollowOwner = true,
                 Loop = true
             },
-            AttackDamage = 6,
-            CrouchAttackDamage = 11,
+            AttackDamage = 5,
+            CrouchAttackDamage = 7,
             JumpAttackDamage = 9,
             ThrowDamage = 10,
             Special1Damage = 24,
-            Special2Damage = 27,
+            Special2Damage = 56,
             UltimateDamage = 60,
             UltimateReach = 40,
 
@@ -83,12 +94,12 @@ namespace BleachVsNarutoMini.Entities
             UltimateDashSpeed = 1150,
             UltimateDashDistance = 460,
 
-            Width = 87,             // Giảm từ 100 xuống 85
-            Height = 94,            // Giảm từ 110 xuống 94
+            Width = 87,
+            Height = 94,
             BodyWidthRatio = 0.5,
             AttackReach = 22,
             GroundBottom = 620,
-            FootPadding = 7.3,        // Giảm nhẹ từ 8 xuống 7
+            FootPadding = 7.3,
             StartFacingRight = false
         };
 
