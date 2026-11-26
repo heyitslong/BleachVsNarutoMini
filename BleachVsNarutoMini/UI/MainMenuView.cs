@@ -502,13 +502,13 @@ namespace BleachVsNarutoMini.UI
                 HorizontalAlignment = HorizontalAlignment.Center,
                 Margin = new Thickness(0, 10, 0, 0)
             };
-
             // Đấu trường
             var mapBox = new StackPanel();
             mapBox.Children.Add(MakeLabel("Chọn đấu trường"));
             var mapRow = new StackPanel { Orientation = Orientation.Horizontal };
-            mapRow.Children.Add(MakeMapCard("Arena1", "Đấu trường Đá", "arena1_bg.png", Color.FromRgb(0x2B, 0x2B, 0x3C)));
-            mapRow.Children.Add(MakeMapCard("Arena2", "Đấu trường Băng", "arena2_bg.png", Color.FromRgb(0x1B, 0x3A, 0x4B)));
+            mapRow.Children.Add(MakeMapCard("Arena1", "Thung lũng Tận Cùng", "Assets/Images/map/arena1_bg.png", Color.FromRgb(0x2B, 0x2B, 0x3C)));
+            mapRow.Children.Add(MakeMapCard("Arena2", "Rừng Chết", "Assets/Images/map/arena2_bg.png", Color.FromRgb(0x2E, 0x3B, 0x23)));
+            mapRow.Children.Add(MakeMapCard("Arena3", "Học viện Làng Lá", "Assets/Images/map/arena3_bg.png", Color.FromRgb(0x3E, 0x2F, 0x22)));
             mapBox.Children.Add(mapRow);
             options.Children.Add(mapBox);
 
@@ -537,8 +537,8 @@ namespace BleachVsNarutoMini.UI
             options.Children.Add(timeBox);
             panel.Children.Add(options);
 
-            // Chọn sẵn lựa chọn của lần trước
-            _mapGroup.Select(lastMap == "Arena2" ? "Arena2" : "Arena1");
+            // [Sửa] Giữ đúng map đã chọn thay vì chỉ check Arena1/Arena2
+            _mapGroup.Select(Array.IndexOf(MapLibrary.AllIds, lastMap) >= 0 ? lastMap : "Arena1");
             string t = lastSeconds.ToString();
             _timeGroup.Select(Array.IndexOf(TimeValues, t) >= 0 ? t : "60");
 
