@@ -1,98 +1,130 @@
-using System;
-using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Markup;
+using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Shapes;
-using System.Windows.Threading;
+using System.Windows.Media.Effects;
 
 namespace BleachVsNarutoMini.UI
 {
-    //  TIỆN ÍCH GIAO DIỆN (style nút bấm, nhãn, radio)
-    internal static class UiKit
+    public static class UiKit
     {
-        private const string ButtonStyleXaml = @"
-<Style xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'
-       xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml'
-       TargetType='Button'>
-  <Setter Property='Foreground' Value='White'/>
-  <Setter Property='Background' Value='#3A3A55'/>
-  <Setter Property='FontSize' Value='18'/>
-  <Setter Property='FontWeight' Value='SemiBold'/>
-  <Setter Property='Cursor' Value='Hand'/>
-  <Setter Property='Template'>
-    <Setter.Value>
-      <ControlTemplate TargetType='Button'>
-        <Border x:Name='bd' Background='{TemplateBinding Background}'
-                BorderBrush='Gold' BorderThickness='1' CornerRadius='8'>
-          <ContentPresenter HorizontalAlignment='Center' VerticalAlignment='Center'/>
-        </Border>
-        <ControlTemplate.Triggers>
-          <Trigger Property='IsMouseOver' Value='True'>
-            <Setter TargetName='bd' Property='Background' Value='#5A5A85'/>
-          </Trigger>
-          <Trigger Property='IsPressed' Value='True'>
-            <Setter TargetName='bd' Property='Background' Value='#2A2A40'/>
-          </Trigger>
-        </ControlTemplate.Triggers>
-      </ControlTemplate>
-    </Setter.Value>
-  </Setter>
-</Style>";
+        public static readonly FontFamily DisplayFont = new("Impact, Arial Black, Segoe UI");
+        public static readonly FontFamily BodyFont = new("Arial Black, Bahnschrift, Segoe UI");
 
-        private static Style _buttonStyle;
-
-        public static Style ButtonStyle
+        // Màu nền tối, bụi bặm, pha chút khói than
+        public static Brush DimBackground() => new RadialGradientBrush
         {
-            get
+            Center = new Point(0.5, 0.5),
+            RadiusX = 0.9,
+            RadiusY = 0.9,
+            GradientStops = new GradientStopCollection
             {
-                if (_buttonStyle == null)
-                    _buttonStyle = (Style)XamlReader.Parse(ButtonStyleXaml);
-                return _buttonStyle;
+                new GradientStop(Color.FromRgb(0x1B, 0x14, 0x11), 0.0),
+                new GradientStop(Color.FromRgb(0x0A, 0x07, 0x09), 1.0)
             }
-        }
+        };
 
-        public static Button MakeButton(string text, RoutedEventHandler onClick, Thickness margin)
+        /// <summary>
+        /// Nút bấm Arcade phong cách thép gỉ, vát chéo, tối bụi bặm
+        /// </summary>
+        public static Button MakeButton(string text, RoutedEventHandler onClick, Thickness margin, bool isPrimary = true)
         {
-            var b = new Button
+            var normalBg = isPrimary
+                ? new LinearGradientBrush(
+                    Color.FromRgb(0xD8, 0x43, 0x15), // Cam cháy tối
+                    Color.FromRgb(0x7E, 0x1B, 0x00),
+                    new Point(0, 0), new Point(0, 1))
+                : new LinearGradientBrush(
+                    Color.FromRgb(0x32, 0x32, 0x3E), // Thép gỉ tối
+                    Color.FromRgb(0x18, 0x18, 0x1E),
+                    new Point(0, 0), new Point(0, 1));
+
+            var hoverBg = isPrimary
+                ? new LinearGradientBrush(
+                    Color.FromRgb(0xFF, 0x6F, 0x00), // Rực lửa khi hover
+                    Color.FromRgb(0xBF, 0x2A, 0x00),
+                    new Point(0, 0), new Point(0, 1))
+                : new LinearGradientBrush(
+                    Color.FromRgb(0x4A, 0x4A, 0x5C),
+                    Color.FromRgb(0x23, 0x23, 0x2D),
+                    new Point(0, 0), new Point(0, 1));
+
+            var normalBorder = isPrimary
+                ? new SolidColorBrush(Color.FromRgb(0xFF, 0xA7, 0x26))
+                : new SolidColorBrush(Color.FromRgb(0x61, 0x61, 0x61));
+
+            var glow = new DropShadowEffect
             {
-                Content = text,
-                Height = 45,
-                Margin = margin,
-                Style = ButtonStyle
+                Color = isPrimary ? Color.FromRgb(0xFF, 0x57, 0x22) : Colors.Black,
+                BlurRadius = isPrimary ? 14 : 6,
+                ShadowDepth = 1,
+                Opacity = isPrimary ? 0.7 : 0.4
             };
-            b.Click += onClick;
-            return b;
-        }
 
-        public static TextBlock MakeLabel(string text)
-        {
-            return new TextBlock
+            var label = new TextBlock
             {
                 Text = text,
+                FontFamily = BodyFont,
+                FontSize = 17,
+                FontWeight = FontWeights.Black,
                 Foreground = Brushes.White,
-                FontSize = 16,
-                Margin = new Thickness(0, 0, 0, 8)
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center,
+                RenderTransform = new SkewTransform(10, 0),
+                RenderTransformOrigin = new Point(0.5, 0.5)
             };
-        }
 
-        public static RadioButton MakeRadio(string text, string group, bool isChecked, Thickness margin)
-        {
-            return new RadioButton
+            var border = new Border
             {
-                Content = text,
-                GroupName = group,
-                IsChecked = isChecked,
-                Foreground = Brushes.White,
-                FontSize = 15,
-                Margin = margin
+                Background = normalBg,
+                BorderBrush = normalBorder,
+                BorderThickness = new Thickness(2),
+                CornerRadius = new CornerRadius(1), // Góc vát vuông sắc cạnh
+                Padding = new Thickness(24, 8, 24, 8),
+                RenderTransform = new SkewTransform(-10, 0),
+                RenderTransformOrigin = new Point(0.5, 0.5),
+                Effect = glow,
+                Child = label
             };
+
+            var btn = new Button
+            {
+                Content = border,
+                Margin = margin,
+                Background = Brushes.Transparent,
+                BorderThickness = new Thickness(0),
+                Cursor = Cursors.Hand,
+                Focusable = false,
+                Template = BuildCleanButtonTemplate()
+            };
+
+            btn.MouseEnter += (_, _) =>
+            {
+                border.Background = hoverBg;
+                border.BorderBrush = isPrimary ? Brushes.White : new SolidColorBrush(Color.FromRgb(0xFF, 0xB7, 0x4D));
+                if (isPrimary) glow.BlurRadius = 20;
+                btn.RenderTransform = new ScaleTransform(1.04, 1.04);
+                btn.RenderTransformOrigin = new Point(0.5, 0.5);
+            };
+
+            btn.MouseLeave += (_, _) =>
+            {
+                border.Background = normalBg;
+                border.BorderBrush = normalBorder;
+                glow.BlurRadius = isPrimary ? 14 : 6;
+                btn.RenderTransform = Transform.Identity;
+            };
+
+            btn.Click += onClick;
+            return btn;
         }
 
-        public static Brush DimBackground()
+        private static ControlTemplate BuildCleanButtonTemplate()
         {
-            return new SolidColorBrush(Color.FromArgb(0xCC, 0, 0, 0));
+            var template = new ControlTemplate(typeof(Button));
+            var presenter = new FrameworkElementFactory(typeof(ContentPresenter));
+            template.VisualTree = presenter;
+            return template;
         }
     }
 }

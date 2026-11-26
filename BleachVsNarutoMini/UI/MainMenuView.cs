@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -11,125 +10,35 @@ using System.Windows.Shapes;
 
 namespace BleachVsNarutoMini.UI
 {
-    //  THÔNG TIN NHÂN VẬT HIỂN THỊ Ở MENU
     public class CharacterInfo
     {
-        public string Id { get; set; }        // id dùng trong code: "Naruto", "Sasuke"
-        public string Name { get; set; }      // tên hiển thị
-        public string Image { get; set; }     // ảnh đứng trong thư mục Assets
-        public string Special { get; set; }   // tên chiêu cuối
-        public int Attack { get; set; }       // sát thương đánh thường
-        public int Throw { get; set; }        // sát thương phi tiêu
-        public int Ult { get; set; }          // sát thương chiêu cuối
+        public string Id { get; set; } = "";
+        public string Name { get; set; } = "";
+        public string Image { get; set; } = "";        // Ảnh avatar ô lưới
+        public string BattlePose { get; set; } = "";   // Ảnh dáng đứng pixel
+        public string Special { get; set; } = "";
+        public int Attack { get; set; }
+        public int Throw { get; set; }
+        public int Ult { get; set; }
     }
-    //  TIỆN ÍCH: nạp ảnh, chữ có viền
+
     internal static class MenuKit
     {
-        // Thư mục chứa ảnh (giống ImageCache của nhóm: Assets/Images/)
-        public const string AssetFolder = "Assets/Images/";
-
-        private static readonly Dictionary<string, ImageSource> Cache = new Dictionary<string, ImageSource>();
-
-        // Nạp ảnh; không có ảnh thì trả về null (menu vẫn chạy bình thường).
-        // Tự tìm ảnh ở nhiều chỗ nên ảnh nằm thư mục con nào cũng được.
-        public static ImageSource LoadImage(string file)
+        public static BitmapImage? LoadImage(string relativePath)
         {
-            ImageSource img;
-            if (Cache.TryGetValue(file, out img)) return img;
-
-            // Cách 0: dùng chính ImageCache của game, nên đường dẫn luôn khớp với ảnh nhân vật trong trận
-            try { img = BleachVsNarutoMini.Entities.ImageCache.Get(file); }
-            catch { img = null; }
-            if (img != null)
+            try
             {
-                Cache[file] = img;
+                string path = relativePath.StartsWith("Assets/", StringComparison.OrdinalIgnoreCase)
+                    ? relativePath
+                    : "Assets/Images/" + relativePath;
+
+                var img = new BitmapImage();
+                img.BeginInit();
+                img.UriSource = new Uri("pack://application:,,,/" + path, UriKind.Absolute);
+                img.CacheOption = BitmapCacheOption.OnLoad;
+                img.EndInit();
+                img.Freeze();
                 return img;
-            }
-
-            // đường dẫn mặc định (AssetFolder + tên_ảnh)
-            // (nếu file đã ghi đủ đường dẫn bắt đầu bằng "Assets/" thì dùng luôn)
-            string path = file.StartsWith("Assets/", StringComparison.OrdinalIgnoreCase)
-                ? file
-                : AssetFolder + file;
-            img = TryLoad(new Uri("pack://application:,,,/" + path, UriKind.Absolute));
-
-            // tự tìm ảnh trong các resource đã đóng gói, bất kể nằm thư mục con nào
-            if (img == null)
-            {
-                string key = FindResourceKey(file);
-                if (key != null)
-                    img = TryLoad(new Uri("pack://application:,,,/" + key, UriKind.Absolute));
-            }
-
-            // tìm file ảnh nằm cạnh file .exe (kiểu Copy to Output Directory)
-            if (img == null)
-            {
-                string full = FindFileOnDisk(file);
-                if (full != null)
-                    img = TryLoad(new Uri(full, UriKind.Absolute));
-            }
-
-            // Không tìm thấy thì ghi vào cửa sổ Output của Visual Studio để dễ kiểm tra
-            if (img == null)
-                System.Diagnostics.Debug.WriteLine("[MenuKit] Khong tim thay anh: " + file);
-
-            Cache[file] = img;
-            return img;
-        }
-
-        // Liệt kê các resource trong chương trình và tìm tên file khớp
-        private static string FindResourceKey(string file)
-        {
-            try
-            {
-                var asm = System.Reflection.Assembly.GetExecutingAssembly();
-                using (var stream = asm.GetManifestResourceStream(asm.GetName().Name + ".g.resources"))
-                {
-                    if (stream == null) return null;
-                    using (var reader = new System.Resources.ResourceReader(stream))
-                    {
-                        string target = file.ToLowerInvariant();
-                        foreach (System.Collections.DictionaryEntry entry in reader)
-                        {
-                            string key = entry.Key as string;
-                            if (key == null) continue;
-                            if (key == target || key.EndsWith("/" + target)) return key;
-                        }
-                    }
-                }
-            }
-            catch
-            {
-            }
-            return null;
-        }
-
-        // Tìm file ảnh trong thư mục chứa file .exe (kể cả thư mục con)
-        private static string FindFileOnDisk(string file)
-        {
-            try
-            {
-                var found = System.IO.Directory.GetFiles(
-                    AppDomain.CurrentDomain.BaseDirectory, file, System.IO.SearchOption.AllDirectories);
-                if (found.Length > 0) return found[0];
-            }
-            catch
-            {
-            }
-            return null;
-        }
-
-        private static ImageSource TryLoad(Uri uri)
-        {
-            try
-            {
-                var bmp = new BitmapImage();
-                bmp.BeginInit();
-                bmp.UriSource = uri;
-                bmp.CacheOption = BitmapCacheOption.OnLoad;
-                bmp.EndInit();
-                bmp.Freeze();
-                return bmp;
             }
             catch
             {
@@ -137,328 +46,494 @@ namespace BleachVsNarutoMini.UI
             }
         }
 
-        // Ảnh pixel art: phóng to không bị nhòe
-        public static Image MakePixelImage(string file, double w, double h)
+        public static FrameworkElement MakeOutlinedText(string text, double size, Brush fill, Brush stroke,
+            double strokeThickness, Color glowColor, double skewX = -8)
         {
-            var img = new Image
+            var grid = new Grid
             {
-                Width = w,
-                Height = h,
-                Stretch = Stretch.Uniform,
-                Source = LoadImage(file),
                 HorizontalAlignment = HorizontalAlignment.Center,
-                VerticalAlignment = VerticalAlignment.Center
+                RenderTransform = new SkewTransform(skewX, 0),
+                RenderTransformOrigin = new Point(0.5, 0.5)
             };
-            RenderOptions.SetBitmapScalingMode(img, BitmapScalingMode.NearestNeighbor);
-            return img;
-        }
 
-        // Chữ có viền đậm + đổ bóng (dùng cho tiêu đề và chữ VS)
-        public static FrameworkElement MakeOutlinedText(string text, double size, Brush fill,
-                                                        Brush stroke, double thickness, Color glow)
-        {
-            var ft = new FormattedText(
-                text,
-                CultureInfo.InvariantCulture,
-                FlowDirection.LeftToRight,
-                new Typeface(new FontFamily("Segoe UI"), FontStyles.Normal, FontWeights.ExtraBold, FontStretches.Normal),
-                size,
-                fill,
-                1.0);
-
-            return new System.Windows.Shapes.Path
+            var offsets = new[] { (-3, -2), (3, -2), (-3, 3), (3, 3), (0, 3) };
+            foreach (var (ox, oy) in offsets)
             {
-                Data = ft.BuildGeometry(new Point(0, 0)),
-                Fill = fill,
-                Stroke = stroke,
-                StrokeThickness = thickness,
-                StrokeLineJoin = PenLineJoin.Round,
-                Margin = new Thickness(thickness),
+                grid.Children.Add(new TextBlock
+                {
+                    Text = text,
+                    FontFamily = UiKit.DisplayFont,
+                    FontSize = size,
+                    FontWeight = FontWeights.Black,
+                    Foreground = stroke,
+                    Margin = new Thickness(ox, oy, -ox, -oy),
+                    HorizontalAlignment = HorizontalAlignment.Center
+                });
+            }
+
+            grid.Children.Add(new TextBlock
+            {
+                Text = text,
+                FontFamily = UiKit.DisplayFont,
+                FontSize = size,
+                FontWeight = FontWeights.Black,
+                Foreground = fill,
                 HorizontalAlignment = HorizontalAlignment.Center,
-                Effect = new DropShadowEffect { Color = glow, BlurRadius = 16, ShadowDepth = 3, Opacity = 0.9 }
-            };
+                Effect = new DropShadowEffect
+                {
+                    Color = glowColor,
+                    BlurRadius = 18,
+                    ShadowDepth = 0,
+                    Opacity = 0.8
+                }
+            });
+            return grid;
         }
     }
 
-    //  NHÓM THẺ BẤM (thay cho RadioButton): chọn 1 trong nhiều thẻ,
-    //  thẻ được chọn có viền vàng phát sáng và phóng nhẹ lên.
-    internal class CardGroup
+    internal class ArcadeSlotGroup
     {
-        private static readonly Brush NormalBg = new SolidColorBrush(Color.FromArgb(0x33, 255, 255, 255));
-        private static readonly Brush SelectedBg = new SolidColorBrush(Color.FromArgb(0x55, 255, 200, 0));
-        private static readonly Brush NormalBorder = new SolidColorBrush(Color.FromArgb(0x70, 255, 255, 255));
+        private readonly Dictionary<string, (Border Slot, Color Accent)> _slots = new();
+        private string _selected = "";
+        public string Value => _selected;
+        public event Action<string>? Changed;
 
-        private readonly List<Border> _cards = new List<Border>();
-        private readonly List<string> _values = new List<string>();
-
-        public string Value { get; private set; }
-        public event Action<string> Changed;
-
-        public Border Add(string value, UIElement content, double width, double height)
+        public Border Add(string value, UIElement content, double width, double height, Color accentColor)
         {
-            var card = new Border
+            var slot = new Border
             {
                 Width = width,
                 Height = height,
                 Margin = new Thickness(5),
-                CornerRadius = new CornerRadius(8),
+                Background = new SolidColorBrush(Color.FromArgb(0xE0, 0x12, 0x11, 0x16)),
+                BorderBrush = new SolidColorBrush(Color.FromRgb(0x42, 0x42, 0x4D)),
                 BorderThickness = new Thickness(2),
-                Background = NormalBg,
-                BorderBrush = NormalBorder,
                 Cursor = Cursors.Hand,
-                RenderTransformOrigin = new Point(0.5, 0.5),
-                RenderTransform = new ScaleTransform(1, 1),
                 Child = content
             };
-            card.MouseLeftButtonDown += delegate { Select(value); };
 
-            _cards.Add(card);
-            _values.Add(value);
-            return card;
+            slot.MouseEnter += (_, _) =>
+            {
+                if (_selected != value)
+                    slot.BorderBrush = Brushes.White;
+            };
+
+            slot.MouseLeave += (_, _) =>
+            {
+                if (_selected != value)
+                    slot.BorderBrush = new SolidColorBrush(Color.FromRgb(0x42, 0x42, 0x4D));
+            };
+
+            slot.MouseLeftButtonDown += (_, _) => Select(value);
+            _slots[value] = (slot, accentColor);
+            return slot;
         }
 
         public void Select(string value)
         {
-            Value = value;
-            for (int i = 0; i < _cards.Count; i++)
+            if (!_slots.ContainsKey(value)) return;
+            _selected = value;
+
+            foreach (var kv in _slots)
             {
-                bool on = _values[i] == value;
-                var c = _cards[i];
-                c.BorderBrush = on ? Brushes.Gold : NormalBorder;
-                c.Background = on ? SelectedBg : NormalBg;
+                bool active = kv.Key == value;
+                var slot = kv.Value.Slot;
+                var accent = kv.Value.Accent;
 
-                var scale = (ScaleTransform)c.RenderTransform;
-                scale.ScaleX = on ? 1.08 : 1.0;
-                scale.ScaleY = on ? 1.08 : 1.0;
+                slot.BorderThickness = new Thickness(active ? 3 : 2);
+                slot.BorderBrush = active
+                    ? new SolidColorBrush(accent)
+                    : new SolidColorBrush(Color.FromRgb(0x42, 0x42, 0x4D));
 
-                c.Effect = on
-                    ? new DropShadowEffect { Color = Colors.Gold, BlurRadius = 18, ShadowDepth = 0, Opacity = 0.9 }
+                slot.Background = active
+                    ? new SolidColorBrush(Color.FromArgb(0xFA, (byte)(accent.R / 3.5), (byte)(accent.G / 3.5), (byte)(accent.B / 3.5)))
+                    : new SolidColorBrush(Color.FromArgb(0xE0, 0x12, 0x11, 0x16));
+
+                slot.Effect = active
+                    ? new DropShadowEffect { Color = accent, BlurRadius = 12, ShadowDepth = 0, Opacity = 0.85 }
                     : null;
             }
-            if (Changed != null) Changed(value);
+            Changed?.Invoke(value);
         }
     }
 
-    //  CỘT CỦA MỘT NGƯỜI CHƠI: ảnh to + chỉ số + các thẻ chọn nhân vật
-    internal class PlayerPanel
+    // =========================================================================
+    //  1. MÀN HÌNH CHỜ MỞ ĐẦU (ĐÃ GẮN ẢNH TỐI NGẦU cSaacWc_Wu)
+    // =========================================================================
+    public class TitleView : UserControl
     {
-        public Border Root { get; private set; }
-        public CardGroup Group { get; private set; }
+        public event Action? PlayClicked;
 
-        private readonly Image _preview;
-        private readonly TextBlock _name;
-        private readonly TextBlock _special;
-        private ProgressBar _barAtk, _barThrow, _barUlt;
-        private TextBlock _numAtk, _numThrow, _numUlt;
-
-        public PlayerPanel(string title, Color accent, string selectedId, CharacterInfo[] list)
+        public TitleView()
         {
-            Group = new CardGroup();
-            var stack = new StackPanel();
-
-            // Tiêu đề cột
-            stack.Children.Add(new TextBlock
+            var stage = new Grid
             {
-                Text = title,
-                Foreground = new SolidColorBrush(accent),
-                FontSize = 18,
-                FontWeight = FontWeights.Bold,
-                HorizontalAlignment = HorizontalAlignment.Center,
-                Margin = new Thickness(0, 0, 0, 8)
-            });
-
-            // Ảnh nhân vật phóng to (cập nhật mỗi khi chọn)
-            _preview = MenuKit.MakePixelImage(list[0].Image, 130, 130);
-            stack.Children.Add(new Border
-            {
-                Width = 170,
-                Height = 140,
-                CornerRadius = new CornerRadius(8),
-                Background = new SolidColorBrush(Color.FromArgb(0x55, 0, 0, 0)),
-                BorderBrush = new SolidColorBrush(accent),
-                BorderThickness = new Thickness(1),
-                HorizontalAlignment = HorizontalAlignment.Center,
-                Child = _preview
-            });
-
-            // Tên + chiêu cuối
-            _name = new TextBlock
-            {
-                Foreground = Brushes.White,
-                FontSize = 22,
-                FontWeight = FontWeights.Bold,
-                HorizontalAlignment = HorizontalAlignment.Center,
-                Margin = new Thickness(0, 6, 0, 0)
-            };
-            _special = new TextBlock
-            {
-                Foreground = Brushes.Gold,
-                FontSize = 13,
-                HorizontalAlignment = HorizontalAlignment.Center,
-                Margin = new Thickness(0, 0, 0, 6)
-            };
-            stack.Children.Add(_name);
-            stack.Children.Add(_special);
-
-            // Bảng chỉ số nhỏ
-            AddStatRow(stack, "Đánh thường", 10, Color.FromRgb(0xFF, 0xA7, 0x26), out _barAtk, out _numAtk);
-            AddStatRow(stack, "Phi tiêu", 20, Color.FromRgb(0x29, 0xB6, 0xF6), out _barThrow, out _numThrow);
-            AddStatRow(stack, "Chiêu cuối", 50, Color.FromRgb(0xEF, 0x53, 0x50), out _barUlt, out _numUlt);
-
-            // Các thẻ chọn nhân vật
-            var cards = new StackPanel
-            {
-                Orientation = Orientation.Horizontal,
-                HorizontalAlignment = HorizontalAlignment.Center,
-                Margin = new Thickness(0, 6, 0, 0)
-            };
-            foreach (var c in list)
-            {
-                var content = new StackPanel
-                {
-                    VerticalAlignment = VerticalAlignment.Center,
-                    HorizontalAlignment = HorizontalAlignment.Center
-                };
-                content.Children.Add(MenuKit.MakePixelImage(c.Image, 46, 46));
-                content.Children.Add(new TextBlock
-                {
-                    Text = c.Name,
-                    Foreground = Brushes.White,
-                    FontSize = 12,
-                    HorizontalAlignment = HorizontalAlignment.Center,
-                    Margin = new Thickness(0, 2, 0, 0)
-                });
-                cards.Children.Add(Group.Add(c.Id, content, 84, 76));
-            }
-            stack.Children.Add(cards);
-
-            Root = new Border
-            {
-                Width = 320,
-                Background = new SolidColorBrush(Color.FromArgb(0x99, 10, 10, 25)),
-                BorderBrush = new SolidColorBrush(accent),
-                BorderThickness = new Thickness(2),
-                CornerRadius = new CornerRadius(10),
-                Padding = new Thickness(12),
-                Child = stack
+                Width = MapLibrary.Width,
+                Height = MapLibrary.Height,
+                ClipToBounds = true
             };
 
-            // Khi chọn thẻ khác thì cập nhật ảnh to và chỉ số
-            Group.Changed += delegate (string id) { Update(Find(list, id)); };
-            Group.Select(Find(list, selectedId).Id);
-        }
-
-        private static CharacterInfo Find(CharacterInfo[] list, string id)
-        {
-            foreach (var c in list)
-                if (c.Id == id) return c;
-            return list[0];
-        }
-
-        private void Update(CharacterInfo info)
-        {
-            _preview.Source = MenuKit.LoadImage(info.Image);
-            _name.Text = info.Name;
-            _special.Text = "Chiêu cuối: " + info.Special;
-
-            _barAtk.Value = info.Attack;
-            _barThrow.Value = info.Throw;
-            _barUlt.Value = info.Ult;
-            _numAtk.Text = info.Attack.ToString();
-            _numThrow.Text = info.Throw.ToString();
-            _numUlt.Text = info.Ult.ToString();
-        }
-
-        // Một dòng chỉ số: tên | thanh | số
-        private static void AddStatRow(StackPanel parent, string label, double max, Color color,
-                                       out ProgressBar bar, out TextBlock num)
-        {
-            var grid = new Grid { Margin = new Thickness(0, 0, 0, 4) };
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(92) });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(30) });
-
-            var lb = new TextBlock { Text = label, Foreground = Brushes.White, FontSize = 12 };
-
-            bar = new ProgressBar
+            // Nạp bức ảnh dark anime clash cSaacWc_Wu làm nền
+            var bgImg = MenuKit.LoadImage("map/title_screen_bg.png");
+            if (bgImg != null)
             {
-                Maximum = max,
-                Height = 8,
-                Foreground = new SolidColorBrush(color),
-                Background = new SolidColorBrush(Color.FromRgb(0x33, 0x33, 0x33)),
-                BorderThickness = new Thickness(0),
-                VerticalAlignment = VerticalAlignment.Center,
-                Margin = new Thickness(4, 0, 4, 0)
-            };
-
-            num = new TextBlock
-            {
-                Foreground = Brushes.Gold,
-                FontSize = 12,
-                FontWeight = FontWeights.Bold,
-                HorizontalAlignment = HorizontalAlignment.Right
-            };
-
-            Grid.SetColumn(bar, 1);
-            Grid.SetColumn(num, 2);
-            grid.Children.Add(lb);
-            grid.Children.Add(bar);
-            grid.Children.Add(num);
-            parent.Children.Add(grid);
-        }
-    }
-    //  MÀN HÌNH MENU: CHỌN TƯỚNG ĐỐI KHÁNG
-        public class MainMenuView : UserControl
-    {
-        private const string AvatarFolder = "Assets/Images/Avatar/";
-        // Muốn thêm nhân vật mới: thêm một dòng vào đây (và một nhánh trong GameWindow.CreateFighter).
-        // Image = AvatarFolder + "tên_file.png" (ảnh nằm trong thư mục Avatar)
-        public static readonly CharacterInfo[] CharacterList =
-        {
-            new CharacterInfo { Id = "Naruto", Name = "Naruto", Image = AvatarFolder + "naruto.png",
-                                Special = "Rasengan", Attack = 5, Throw = 12, Ult = 40 },
-            new CharacterInfo { Id = "Sasuke", Name = "Sasuke", Image = AvatarFolder + "sasuke.png",
-                                Special = "Chidori", Attack = 6, Throw = 18, Ult = 32 }
-        };
-
-        // Đổi id ("Naruto") sang tên hiển thị
-        public static string DisplayName(string id)
-        {
-            foreach (var c in CharacterList)
-                if (c.Id == id) return c.Name;
-            return id;
-        }
-
-        // Các mức thời gian (giây). "0" nghĩa là không giới hạn.
-        private static readonly string[] TimeValues = { "30", "60", "90", "0" };
-        private static readonly string[] TimeLabels = { "30s", "60s", "90s", "Vô hạn" };
-
-        // (nhân vật P1, nhân vật P2, đấu trường, số giây của trận)
-        public event Action<string, string, string, int> StartClicked;
-
-        private readonly PlayerPanel _p1;
-        private readonly PlayerPanel _p2;
-        private readonly CardGroup _mapGroup = new CardGroup();
-        private readonly CardGroup _timeGroup = new CardGroup();
-
-        public MainMenuView(string lastP1 = "Naruto", string lastP2 = "Sasuke",
-                            string lastMap = "Arena1", int lastSeconds = 60)
-        {
-            // Nền: ảnh menu_bg.png phủ lớp mờ; không có ảnh thì dùng nền đen mờ 
-            var root = new Grid();
-            var bg = MenuKit.LoadImage("menu_bg.png");
-            if (bg != null)
-            {
-                root.Children.Add(new Image { Source = bg, Stretch = Stretch.UniformToFill });
-                root.Children.Add(new System.Windows.Shapes.Rectangle
-                {
-                    Fill = new SolidColorBrush(Color.FromArgb(0x88, 0, 0, 0))
-                });
+                stage.Children.Add(new Image { Source = bgImg, Stretch = Stretch.Fill });
             }
             else
             {
-                root.Background = UiKit.DimBackground();
+                stage.Background = UiKit.DimBackground();
             }
+
+            // Phủ lớp tối bụi bặm (vignette khói)
+            var smokeOverlay = new Rectangle
+            {
+                Fill = new RadialGradientBrush
+                {
+                    Center = new Point(0.5, 0.5),
+                    RadiusX = 0.85,
+                    RadiusY = 0.85,
+                    GradientStops = new GradientStopCollection
+                    {
+                        new GradientStop(Color.FromArgb(0x11, 0, 0, 0), 0.0),
+                        new GradientStop(Color.FromArgb(0x99, 0x05, 0x04, 0x06), 1.0)
+                    }
+                },
+                IsHitTestVisible = false
+            };
+            stage.Children.Add(smokeOverlay);
+
+            // Cụm nút bấm đặt khéo léo bên dưới để không che nhân vật
+            var buttonPanel = new StackPanel
+            {
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Bottom,
+                Margin = new Thickness(0, 0, 0, 24)
+            };
+
+            var btnPlay = UiKit.MakeButton("▶  BẮT ĐẦU CHƠI", (_, _) => PlayClicked?.Invoke(), new Thickness(0, 0, 0, 10), isPrimary: true);
+            btnPlay.Width = 260;
+            btnPlay.Height = 48;
+            buttonPanel.Children.Add(btnPlay);
+
+            var btnExit = UiKit.MakeButton("✕  THOÁT GAME", (_, _) => Application.Current.Shutdown(), new Thickness(0), isPrimary: false);
+            btnExit.Width = 260;
+            btnExit.Height = 42;
+            buttonPanel.Children.Add(btnExit);
+
+            stage.Children.Add(buttonPanel);
+
+            Content = new Viewbox
+            {
+                Stretch = Stretch.Uniform,
+                Child = stage
+            };
+        }
+
+        internal static Grid BuildDarkBackdrop()
+        {
+            var root = new Grid
+            {
+                Background = new LinearGradientBrush(
+                    Color.FromRgb(0x13, 0x11, 0x16),
+                    Color.FromRgb(0x0A, 0x09, 0x0C),
+                    new Point(0, 0), new Point(1, 1))
+            };
+
+            // Tạo các mảng chéo tối kiểu chiến trường gỉ
+            var poly = new Polygon
+            {
+                Points = new PointCollection
+                {
+                    new Point(0, 0), new Point(480, 0), new Point(220, 640), new Point(0, 640)
+                },
+                Fill = new SolidColorBrush(Color.FromArgb(0x12, 0x9E, 0x3D, 0x0E))
+            };
+            root.Children.Add(poly);
+            return root;
+        }
+
+        internal static Viewbox WrapViewbox(UIElement child) => new()
+        {
+            Stretch = Stretch.Uniform,
+            StretchDirection = StretchDirection.DownOnly,
+            Margin = new Thickness(16),
+            Child = child
+        };
+    }
+
+    // =========================================================================
+    //  2. TRANG CHỌN NHÂN VẬT (BỐ CỤC LƯỚI Ở GIỮA, 2 TƯỚNG TỐI NGẦU HAI BÊN)
+    // =========================================================================
+    public class CharacterSelectView : UserControl
+    {
+        private const string AvatarFolder = "Assets/Images/Avatar/";
+
+        public static readonly CharacterInfo[] CharacterList =
+        {
+            new CharacterInfo
+            {
+                Id = "Naruto", Name = "UZUMAKI NARUTO",
+                Image = AvatarFolder + "naruto.png",
+                BattlePose = "Naruto/dung/narutodung1.png",
+                Special = "RASENGAN", Attack = 5, Throw = 12, Ult = 40
+            },
+            new CharacterInfo
+            {
+                Id = "Sasuke", Name = "UCHIHA SASUKE",
+                Image = AvatarFolder + "sasuke.png",
+                BattlePose = "Sasuke/dung/sasukedung1.png",
+                Special = "CHIDORI", Attack = 6, Throw = 18, Ult = 32
+            }
+        };
+
+        public static string DisplayName(string id)
+        {
+            foreach (var c in CharacterList)
+                if (c.Id == id) return c.Id;
+            return id;
+        }
+
+        public event Action<string, string>? NextClicked;
+        public event Action? BackClicked;
+
+        private readonly ArcadeSlotGroup _p1Group = new();
+        private readonly ArcadeSlotGroup _p2Group = new();
+        private readonly Image _p1BigSprite;
+        private readonly Image _p2BigSprite;
+        private readonly TextBlock _p1NameLabel;
+        private readonly TextBlock _p2NameLabel;
+        private readonly TextBlock _p1SkillLabel;
+        private readonly TextBlock _p2SkillLabel;
+
+        public CharacterSelectView(string lastP1 = "Naruto", string lastP2 = "Sasuke")
+        {
+            var root = TitleView.BuildDarkBackdrop();
+
+            var mainLayout = new StackPanel
+            {
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+
+            var header = MenuKit.MakeOutlinedText("SELECT CHARACTER", 40,
+                new SolidColorBrush(Color.FromRgb(0xD8, 0x43, 0x15)), // Cam tối gỉ
+                Brushes.Black, 3, Color.FromRgb(0x7E, 0x1B, 0x00), -10);
+            header.Margin = new Thickness(0, 0, 0, 12);
+            mainLayout.Children.Add(header);
+
+            var arenaGrid = new Grid { HorizontalAlignment = HorizontalAlignment.Center };
+            arenaGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(270) });
+            arenaGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            arenaGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(270) });
+
+            // Cột P1 (Xanh Thép tối)
+            var p1Side = BuildHeroStand(
+                "PLAYER 1  [W A S D]",
+                Color.FromRgb(0x19, 0x76, 0xD2),
+                facingRight: true,
+                out _p1BigSprite, out _p1NameLabel, out _p1SkillLabel);
+            Grid.SetColumn(p1Side, 0);
+            arenaGrid.Children.Add(p1Side);
+
+            // Khung lưới chọn ô kim loại tối
+            var centerBox = new Border
+            {
+                Background = new SolidColorBrush(Color.FromArgb(0xF2, 0x12, 0x10, 0x16)),
+                BorderBrush = new SolidColorBrush(Color.FromRgb(0x42, 0x42, 0x4D)),
+                BorderThickness = new Thickness(2),
+                Padding = new Thickness(16, 12, 16, 14),
+                Margin = new Thickness(12, 0, 12, 0),
+                VerticalAlignment = VerticalAlignment.Center
+            };
+
+            var centerStack = new StackPanel { HorizontalAlignment = HorizontalAlignment.Center };
+
+            centerStack.Children.Add(MakeGridHeader("1P SELECT", Color.FromRgb(0x29, 0xB6, 0xF6)));
+            centerStack.Children.Add(BuildCharacterSlots(_p1Group, Color.FromRgb(0x29, 0xB6, 0xF6)));
+
+            var vs = MenuKit.MakeOutlinedText("VS", 36,
+                new LinearGradientBrush(Color.FromRgb(0xE6, 0x51, 0x00), Color.FromRgb(0xBF, 0x36, 0x0C), new Point(0, 0), new Point(0, 1)),
+                Brushes.Black, 3, Color.FromRgb(0xB7, 0x1C, 0x1C), -14);
+            vs.Margin = new Thickness(0, 6, 0, 6);
+            centerStack.Children.Add(vs);
+
+            centerStack.Children.Add(MakeGridHeader("2P SELECT", Color.FromRgb(0xEF, 0x53, 0x50)));
+            centerStack.Children.Add(BuildCharacterSlots(_p2Group, Color.FromRgb(0xEF, 0x53, 0x50)));
+
+            centerBox.Child = centerStack;
+            Grid.SetColumn(centerBox, 1);
+            arenaGrid.Children.Add(centerBox);
+
+            // Cột P2 (Đỏ Máu tối)
+            var p2Side = BuildHeroStand(
+                "PLAYER 2  [ARROWS]",
+                Color.FromRgb(0xC6, 0x28, 0x28),
+                facingRight: false,
+                out _p2BigSprite, out _p2NameLabel, out _p2SkillLabel);
+            Grid.SetColumn(p2Side, 2);
+            arenaGrid.Children.Add(p2Side);
+
+            mainLayout.Children.Add(arenaGrid);
+
+            _p1Group.Changed += id => UpdateHeroStand(id, _p1BigSprite, _p1NameLabel, _p1SkillLabel);
+            _p2Group.Changed += id => UpdateHeroStand(id, _p2BigSprite, _p2NameLabel, _p2SkillLabel);
+            _p1Group.Select(lastP1);
+            _p2Group.Select(lastP2);
+
+            var buttons = new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                Margin = new Thickness(0, 18, 0, 0)
+            };
+
+            var back = UiKit.MakeButton("◄ QUAY LẠI", (_, _) => BackClicked?.Invoke(), new Thickness(0), isPrimary: false);
+            back.Width = 170;
+            back.Height = 44;
+
+            var next = UiKit.MakeButton("CHỌN ĐẤU TRƯỜNG ►", (_, _) => NextClicked?.Invoke(_p1Group.Value, _p2Group.Value), new Thickness(16, 0, 0, 0), isPrimary: true);
+            next.Width = 230;
+            next.Height = 44;
+
+            buttons.Children.Add(back);
+            buttons.Children.Add(next);
+            mainLayout.Children.Add(buttons);
+
+            root.Children.Add(TitleView.WrapViewbox(mainLayout));
+            Content = root;
+        }
+
+        private static TextBlock MakeGridHeader(string text, Color color) => new()
+        {
+            Text = text,
+            FontFamily = UiKit.BodyFont,
+            FontSize = 13,
+            Foreground = new SolidColorBrush(color),
+            HorizontalAlignment = HorizontalAlignment.Center,
+            Margin = new Thickness(0, 0, 0, 4)
+        };
+
+        private static StackPanel BuildCharacterSlots(ArcadeSlotGroup group, Color accent)
+        {
+            var row = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center };
+            foreach (var c in CharacterList)
+            {
+                var img = new Image
+                {
+                    Width = 68,
+                    Height = 68,
+                    Stretch = Stretch.UniformToFill,
+                    Source = MenuKit.LoadImage(c.Image)
+                };
+                RenderOptions.SetBitmapScalingMode(img, BitmapScalingMode.NearestNeighbor);
+                row.Children.Add(group.Add(c.Id, img, 76, 76, accent));
+            }
+            return row;
+        }
+
+        private static Border BuildHeroStand(string tag, Color accent, bool facingRight,
+            out Image bigSprite, out TextBlock nameLabel, out TextBlock skillLabel)
+        {
+            var stack = new StackPanel { HorizontalAlignment = HorizontalAlignment.Center };
+
+            var tagBar = new Border
+            {
+                Background = new SolidColorBrush(accent),
+                Padding = new Thickness(12, 3, 12, 3),
+                RenderTransform = new SkewTransform(-10, 0),
+                RenderTransformOrigin = new Point(0.5, 0.5),
+                Child = new TextBlock
+                {
+                    Text = tag,
+                    FontFamily = UiKit.BodyFont,
+                    FontSize = 12,
+                    Foreground = Brushes.White,
+                    HorizontalAlignment = HorizontalAlignment.Center
+                }
+            };
+            stack.Children.Add(tagBar);
+
+            var stageBox = new Grid { Height = 190, Margin = new Thickness(0, 6, 0, 4) };
+            var floorGlow = new Ellipse
+            {
+                Width = 140,
+                Height = 22,
+                VerticalAlignment = VerticalAlignment.Bottom,
+                Fill = new RadialGradientBrush(Color.FromArgb(0x55, accent.R, accent.G, accent.B), Colors.Transparent)
+            };
+            bigSprite = new Image
+            {
+                Width = 175,
+                Height = 175,
+                Stretch = Stretch.Uniform,
+                Source = MenuKit.LoadImage("Naruto/dung/narutodung1.png"),
+                VerticalAlignment = VerticalAlignment.Bottom,
+                RenderTransform = new ScaleTransform(facingRight ? 1 : -1, 1),
+                RenderTransformOrigin = new Point(0.5, 0.5)
+            };
+            RenderOptions.SetBitmapScalingMode(bigSprite, BitmapScalingMode.NearestNeighbor);
+            stageBox.Children.Add(floorGlow);
+            stageBox.Children.Add(bigSprite);
+            stack.Children.Add(stageBox);
+
+            nameLabel = new TextBlock
+            {
+                FontFamily = UiKit.DisplayFont,
+                FontSize = 22,
+                Foreground = Brushes.White,
+                HorizontalAlignment = HorizontalAlignment.Center
+            };
+            skillLabel = new TextBlock
+            {
+                FontFamily = UiKit.BodyFont,
+                FontSize = 12,
+                Foreground = new SolidColorBrush(Color.FromRgb(0xEF, 0x6C, 0x00)),
+                HorizontalAlignment = HorizontalAlignment.Center,
+                Margin = new Thickness(0, 2, 0, 0)
+            };
+            stack.Children.Add(nameLabel);
+            stack.Children.Add(skillLabel);
+
+            return new Border
+            {
+                Background = new SolidColorBrush(Color.FromArgb(0xC8, 0x10, 0x0E, 0x13)),
+                BorderBrush = new SolidColorBrush(accent),
+                BorderThickness = new Thickness(2),
+                Padding = new Thickness(12),
+                Child = stack
+            };
+        }
+
+        private static void UpdateHeroStand(string id, Image sprite, TextBlock nameLabel, TextBlock skillLabel)
+        {
+            foreach (var c in CharacterList)
+            {
+                if (c.Id != id) continue;
+                sprite.Source = MenuKit.LoadImage(c.BattlePose);
+                nameLabel.Text = c.Name;
+                skillLabel.Text = "ULT: " + c.Special + "  |  ATK " + c.Attack + "  |  THROW " + c.Throw;
+                break;
+            }
+        }
+    }
+
+    // =========================================================================
+    //  3. TRANG CHỌN ĐẤU TRƯỜNG & THỜI GIAN
+    // =========================================================================
+    public class MapSelectView : UserControl
+    {
+        private static readonly string[] TimeValues = { "30", "60", "90", "0" };
+        private static readonly string[] TimeLabels = { "30s", "60s", "90s", "∞ VÔ HẠN" };
+
+        public event Action<string, int>? StartBattleClicked;
+        public event Action? BackClicked;
+
+        private readonly ArcadeSlotGroup _mapGroup = new();
+        private readonly ArcadeSlotGroup _timeGroup = new();
+
+        public MapSelectView(string lastMap = "Arena1", int lastSeconds = 60)
+        {
+            var root = TitleView.BuildDarkBackdrop();
 
             var panel = new StackPanel
             {
@@ -466,159 +541,135 @@ namespace BleachVsNarutoMini.UI
                 VerticalAlignment = VerticalAlignment.Center
             };
 
-            //  Tiêu đề game 
-            var title = MenuKit.MakeOutlinedText("BLEACH VS NARUTO", 44,
-                new SolidColorBrush(Color.FromRgb(0xFF, 0xD5, 0x4F)),
-                new SolidColorBrush(Color.FromRgb(0x3E, 0x1A, 0x00)), 4, Colors.Black);
-            title.Margin = new Thickness(0, 0, 0, 10);
-            panel.Children.Add(title);
+            var header = MenuKit.MakeOutlinedText("STAGE & TIME SELECT", 40,
+                new SolidColorBrush(Color.FromRgb(0xD8, 0x43, 0x15)),
+                Brushes.Black, 3, Color.FromRgb(0x7E, 0x1B, 0x00), -10);
+            header.Margin = new Thickness(0, 0, 0, 16);
+            panel.Children.Add(header);
 
-            // Hai cột người chơi + chữ VS ở giữa
-            _p1 = new PlayerPanel("NGƯỜI CHƠI 1", Color.FromRgb(0x4F, 0xC3, 0xF7), lastP1, CharacterList);
-            _p2 = new PlayerPanel("NGƯỜI CHƠI 2", Color.FromRgb(0xEF, 0x53, 0x50), lastP2, CharacterList);
-
-            var vs = MenuKit.MakeOutlinedText("VS", 54,
-                new SolidColorBrush(Color.FromRgb(0xFF, 0x98, 0x00)),
-                new SolidColorBrush(Color.FromRgb(0xB7, 0x1C, 0x1C)), 3, Colors.OrangeRed);
-            vs.VerticalAlignment = VerticalAlignment.Center;
-            vs.Margin = new Thickness(18, 0, 18, 0);
-
-            var cols = new Grid { HorizontalAlignment = HorizontalAlignment.Center };
-            cols.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            cols.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            cols.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            Grid.SetColumn(_p1.Root, 0);
-            Grid.SetColumn(vs, 1);
-            Grid.SetColumn(_p2.Root, 2);
-            cols.Children.Add(_p1.Root);
-            cols.Children.Add(vs);
-            cols.Children.Add(_p2.Root);
-            panel.Children.Add(cols);
-
-            // Hàng dưới: đấu trường (ảnh thu nhỏ) + thời gian 
-            var options = new StackPanel
+            // Khung chọn Đấu trường
+            var mapBox = new Border
             {
-                Orientation = Orientation.Horizontal,
-                HorizontalAlignment = HorizontalAlignment.Center,
-                Margin = new Thickness(0, 10, 0, 0)
+                Background = new SolidColorBrush(Color.FromArgb(0xEE, 0x12, 0x10, 0x16)),
+                BorderBrush = new SolidColorBrush(Color.FromRgb(0x42, 0x42, 0x4D)),
+                BorderThickness = new Thickness(2),
+                Padding = new Thickness(16, 12, 16, 14),
+                Margin = new Thickness(0, 0, 0, 14)
             };
-            // Đấu trường
-            var mapBox = new StackPanel();
-            mapBox.Children.Add(MakeLabel("Chọn đấu trường"));
-            var mapRow = new StackPanel { Orientation = Orientation.Horizontal };
-            mapRow.Children.Add(MakeMapCard("Arena1", "Thung lũng Tận Cùng", "Assets/Images/map/arena1_bg.png", Color.FromRgb(0x2B, 0x2B, 0x3C)));
-            mapRow.Children.Add(MakeMapCard("Arena2", "Rừng Chết", "Assets/Images/map/arena2_bg.png", Color.FromRgb(0x2E, 0x3B, 0x23)));
-            mapRow.Children.Add(MakeMapCard("Arena3", "Học viện Làng Lá", "Assets/Images/map/arena3_bg.png", Color.FromRgb(0x3E, 0x2F, 0x22)));
-            mapBox.Children.Add(mapRow);
-            options.Children.Add(mapBox);
 
-            // Thời gian
-            var timeBox = new StackPanel
+            var mapStack = new StackPanel();
+            mapStack.Children.Add(MakeBarTitle("CHỌN ĐẤU TRƯỜNG (STAGE)", Color.FromRgb(0xFF, 0xB3, 0x00)));
+            var mapRow = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center };
+            mapRow.Children.Add(MakeMapCard("Arena1", "THUNG LŨNG TẬN CÙNG", "Assets/Images/map/arena1_bg.png", Color.FromRgb(0x2B, 0x2B, 0x3C)));
+            mapRow.Children.Add(MakeMapCard("Arena2", "RỪNG CHẾT", "Assets/Images/map/arena2_bg.png", Color.FromRgb(0x2E, 0x3B, 0x23)));
+            mapRow.Children.Add(MakeMapCard("Arena3", "HỌC VIỆN LÀNG LÁ", "Assets/Images/map/arena3_bg.png", Color.FromRgb(0x3E, 0x2F, 0x22)));
+            mapStack.Children.Add(mapRow);
+            mapBox.Child = mapStack;
+            panel.Children.Add(mapBox);
+
+            // Khung chọn Thời gian
+            var timeBox = new Border
             {
-                VerticalAlignment = VerticalAlignment.Center,
-                Margin = new Thickness(40, 0, 0, 0)
+                Background = new SolidColorBrush(Color.FromArgb(0xEE, 0x12, 0x10, 0x16)),
+                BorderBrush = new SolidColorBrush(Color.FromRgb(0x29, 0xB6, 0xF6)),
+                BorderThickness = new Thickness(2),
+                Padding = new Thickness(16, 10, 16, 12)
             };
-            timeBox.Children.Add(MakeLabel("Thời gian trận"));
-            var timeRow = new StackPanel { Orientation = Orientation.Horizontal };
+
+            var timeStack = new StackPanel();
+            timeStack.Children.Add(MakeBarTitle("THỜI GIAN TRẬN ĐẤU (TIME)", Color.FromRgb(0x29, 0xB6, 0xF6)));
+            var timeRow = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center };
             for (int i = 0; i < TimeValues.Length; i++)
             {
                 var text = new TextBlock
                 {
                     Text = TimeLabels[i],
+                    FontFamily = UiKit.BodyFont,
                     Foreground = Brushes.White,
                     FontSize = 14,
-                    FontWeight = FontWeights.Bold,
                     HorizontalAlignment = HorizontalAlignment.Center,
                     VerticalAlignment = VerticalAlignment.Center
                 };
-                timeRow.Children.Add(_timeGroup.Add(TimeValues[i], text, 66, 36));
+                timeRow.Children.Add(_timeGroup.Add(TimeValues[i], text, 120, 40, Color.FromRgb(0x29, 0xB6, 0xF6)));
             }
-            timeBox.Children.Add(timeRow);
-            options.Children.Add(timeBox);
-            panel.Children.Add(options);
+            timeStack.Children.Add(timeRow);
+            timeBox.Child = timeStack;
+            panel.Children.Add(timeBox);
 
-            // [Sửa] Giữ đúng map đã chọn thay vì chỉ check Arena1/Arena2
             _mapGroup.Select(Array.IndexOf(MapLibrary.AllIds, lastMap) >= 0 ? lastMap : "Arena1");
             string t = lastSeconds.ToString();
             _timeGroup.Select(Array.IndexOf(TimeValues, t) >= 0 ? t : "60");
 
-            // Nút bấm 
             var buttons = new StackPanel
             {
                 Orientation = Orientation.Horizontal,
                 HorizontalAlignment = HorizontalAlignment.Center,
-                Margin = new Thickness(0, 12, 0, 0)
+                Margin = new Thickness(0, 18, 0, 0)
             };
-            var start = UiKit.MakeButton("BẮT ĐẦU", Start_Click, new Thickness(0));
-            start.Width = 220;
-            var exit = UiKit.MakeButton("THOÁT", Exit_Click, new Thickness(12, 0, 0, 0));
-            exit.Width = 150;
+
+            var back = UiKit.MakeButton("◄ ĐỔI NHÂN VẬT", (_, _) => BackClicked?.Invoke(), new Thickness(0), isPrimary: false);
+            back.Width = 190;
+            back.Height = 44;
+
+            var start = UiKit.MakeButton("⚔  VÀO TRẬN ĐẤU", (_, _) =>
+            {
+                if (!int.TryParse(_timeGroup.Value, out int seconds)) seconds = 60;
+                StartBattleClicked?.Invoke(_mapGroup.Value, seconds);
+            }, new Thickness(16, 0, 0, 0), isPrimary: true);
+            start.Width = 230;
+            start.Height = 44;
+
+            buttons.Children.Add(back);
             buttons.Children.Add(start);
-            buttons.Children.Add(exit);
             panel.Children.Add(buttons);
 
-            // Viewbox: nếu cửa sổ nhỏ hơn nội dung thì tự thu nhỏ cho vừa, không bị cắt
-            root.Children.Add(new Viewbox
-            {
-                Stretch = Stretch.Uniform,
-                StretchDirection = StretchDirection.DownOnly,
-                Margin = new Thickness(10),
-                Child = panel
-            });
+            root.Children.Add(TitleView.WrapViewbox(panel));
             Content = root;
         }
 
-        private static TextBlock MakeLabel(string text)
+        private static TextBlock MakeBarTitle(string text, Color accent) => new()
         {
-            return new TextBlock
-            {
-                Text = text,
-                Foreground = Brushes.White,
-                FontSize = 14,
-                FontWeight = FontWeights.Bold,
-                Margin = new Thickness(5, 0, 0, 2)
-            };
-        }
+            Text = text,
+            FontFamily = UiKit.BodyFont,
+            Foreground = new SolidColorBrush(accent),
+            FontSize = 13,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            Margin = new Thickness(0, 0, 0, 8)
+        };
 
-        // Thẻ đấu trường: ảnh thu nhỏ + tên. Không có ảnh thì tô màu nền của đấu trường.
         private Border MakeMapCard(string id, string caption, string imageFile, Color fallback)
         {
-            UIElement thumb;
+            var stack = new StackPanel();
+            var thumbBox = new Border
+            {
+                Width = 196,
+                Height = 108,
+                BorderBrush = Brushes.Black,
+                BorderThickness = new Thickness(1)
+            };
+
             var src = MenuKit.LoadImage(imageFile);
             if (src != null)
-                thumb = new Image { Source = src, Width = 120, Height = 75, Stretch = Stretch.UniformToFill };
+                thumbBox.Child = new Image { Source = src, Stretch = Stretch.UniformToFill };
             else
-                thumb = new System.Windows.Shapes.Rectangle { Width = 120, Height = 75, Fill = new SolidColorBrush(fallback) };
+                thumbBox.Child = new Rectangle { Fill = new SolidColorBrush(fallback) };
 
-            var content = new StackPanel
+            stack.Children.Add(thumbBox);
+            stack.Children.Add(new Border
             {
-                VerticalAlignment = VerticalAlignment.Center,
-                HorizontalAlignment = HorizontalAlignment.Center
-            };
-            content.Children.Add(thumb);
-            content.Children.Add(new TextBlock
-            {
-                Text = caption,
-                Foreground = Brushes.White,
-                FontSize = 12,
-                HorizontalAlignment = HorizontalAlignment.Center,
-                Margin = new Thickness(0, 3, 0, 0)
+                Background = new SolidColorBrush(Color.FromArgb(0xEE, 0x0A, 0x09, 0x0D)),
+                Padding = new Thickness(4, 5, 4, 5),
+                Child = new TextBlock
+                {
+                    Text = caption,
+                    FontFamily = UiKit.BodyFont,
+                    Foreground = Brushes.White,
+                    FontSize = 12,
+                    HorizontalAlignment = HorizontalAlignment.Center
+                }
             });
-            return _mapGroup.Add(id, content, 132, 104);
-        }
 
-        private void Start_Click(object sender, RoutedEventArgs e)
-        {
-            int seconds;
-            if (!int.TryParse(_timeGroup.Value, out seconds)) seconds = 60;
-
-            if (StartClicked != null)
-                StartClicked(_p1.Group.Value, _p2.Group.Value, _mapGroup.Value, seconds);
-        }
-
-        private void Exit_Click(object sender, RoutedEventArgs e)
-        {
-            Application.Current.Shutdown();
+            return _mapGroup.Add(id, stack, 202, 140, Color.FromRgb(0xFF, 0xB3, 0x00));
         }
     }
 }
