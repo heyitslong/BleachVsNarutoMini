@@ -82,7 +82,7 @@ namespace BleachVsNarutoMini.Entities
 
         // [Phát thêm] Thông số chiêu biến thân W + I (Vĩ Thú Ngọc) của Naruto
         private const string TransformOrbPrefix = "Naruto/bienthan/narutohieuungdacbiet";
-        private const double TransformOrbSpeed = 680;            // Tốc độ bay xéo của quả cầu sau khi ném
+        private const double TransformOrbSpeed = 750;            // Tốc độ bay xéo của quả cầu sau khi ném
         private const double TransformOrbChargeStartSize = 55;   // Kích thước khởi điểm khi mới xuất hiện ở frame 4
         private const double TransformOrbFlightSize = 200;       // Kích thước khi gồng phình to đầy đủ ở hết frame 9
         private const double TransformOrbChargeDuration = 0.72;  // Thời gian gồng từ từ qua frame 4 -> 9 tới ngưỡng to nhất (giây)
@@ -90,8 +90,8 @@ namespace BleachVsNarutoMini.Entities
         private const double TransformOrbMaxExplosionSize = 560; // Kích thước cực đại khi vụ nổ phác tác
         private const double TransformOrbExpandDuration = 0.65;  // Thời gian vụ nổ cuốn mục tiêu / lan rộng (giây)
         private const double TransformOrbHandGap = 26;           // Khoảng hở phía trên bàn tay Chakra để quả cầu cao thoáng, không dính tay
-        private const int TransformOrbDirectTotalDamage = 100;   // Sát thương trọn vẹn khi trúng ngay người từ đầu
-        private const int TransformOrbSplashDamage = 60;         // Sát thương ít hơn khi dính rìa vụ nổ lúc phác tác
+        private const int TransformOrbDirectTotalDamage = 70;   // Sát thương trọn vẹn khi trúng ngay người từ đầu
+        private const int TransformOrbSplashDamage = 25;         // Sát thương ít hơn khi dính rìa vụ nổ lúc phác tác
 
         private const string ShurikenPrefix = "Assets/effect/khiNhanVatPhongPhiTieu/sskanhphitieu";
 
@@ -218,9 +218,10 @@ namespace BleachVsNarutoMini.Entities
             ? new Rect(BodyX + BodyW, BodyTop, _cfg.AttackReach, BodyH)
             : new Rect(BodyX - _cfg.AttackReach, BodyTop, _cfg.AttackReach, BodyH);
 
+        // [Phát thêm] Nới nhẹ tầm SkillBox để đòn Rasengan sau khi tốc biến chạm mục tiêu ổn định hơn
         private Rect SkillBox => FacingRight
-            ? new Rect(BodyX + BodyW, BodyTop - 10, _cfg.UltimateReach, BodyH + 10)
-            : new Rect(BodyX - _cfg.UltimateReach, BodyTop - 10, _cfg.UltimateReach, BodyH + 10);
+            ? new Rect(BodyX + BodyW - 12, BodyTop - 14, Math.Max(_cfg.UltimateReach, BodyW + 36), BodyH + 24)
+            : new Rect(BodyX - Math.Max(_cfg.UltimateReach, BodyW + 36) + 12, BodyTop - 14, Math.Max(_cfg.UltimateReach, BodyW + 36), BodyH + 24);
 
         protected Fighter(double x, FighterConfig cfg,
                           Key left, Key right, Key jump, Key attack, Key block, Key throwSkill, Key ult, Key dash, Key teleport = Key.None)
@@ -963,7 +964,7 @@ namespace BleachVsNarutoMini.Entities
             SpawnTeleportEffect();
 
             double oppCenterX = Opponent.BodyX + Opponent.BodyW / 2;
-            double behindOffset = (Opponent.BodyW + BodyW) / 2 + 25;
+            double behindOffset = (Opponent.BodyW + BodyW) / 2 + 6;
             double rawTargetX = Opponent.FacingRight
                 ? (oppCenterX - behindOffset - BodyW / 2)
                 : (oppCenterX + behindOffset - BodyW / 2);
@@ -1231,7 +1232,11 @@ namespace BleachVsNarutoMini.Entities
                     : (_cfg.UltimateChargeFrames > 0 ? _cfg.UltimateChargeFrames : _cfg.Ultimate.Count / 2);
                 if (_frame < activeFrame || _skillHasHit) return;
 
-                if (SkillBox.IntersectsWith(target.Bounds))
+                double targetCenterX = target.BodyX + target.BodyW / 2;
+                bool isTouchingOrInRange = SkillBox.IntersectsWith(target.Bounds)
+                    || (IsNarutoRasengan && _ultHasTeleported && Math.Abs(myCenterX - targetCenterX) <= (BodyW + target.BodyW) * 0.5 + 32);
+
+                if (isTouchingOrInRange)
                 {
                     double remainingUltTime = Math.Max(0.5, (_cfg.Ultimate.Count - _frame) * _cfg.Ultimate.FrameTime);
                     target.TakeDamage(_cfg.UltimateDamage, remainingUltTime, true, myCenterX, isUltimate: true);
