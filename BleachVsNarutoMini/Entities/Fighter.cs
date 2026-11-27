@@ -16,7 +16,7 @@ namespace BleachVsNarutoMini.Entities
 
         // [Phát thêm] Thông số Đánh thường (Attack) chia 4 đợt combo
         private const double AttackCooldown = 0.17;          // Thời gian chờ sau khi tung đòn hất tung kết thúc chuỗi combo (giây)
-        private const double AttackComboResetTime = 0.25;     // Thời gian giữ chuỗi combo giữa 2 lần bấm J (0.36 giây)
+        private const double AttackComboResetTime = 0.25;    // Thời gian giữ chuỗi combo giữa 2 lần bấm J (0.25 giây)
         private const double AttackStepDistance = 2;         // Độ nhúc nhích tiến lên phía trước ở mỗi tư thế đánh (pixel)
 
         // [Phát thêm] Thông số Lướt (Dash)
@@ -32,12 +32,14 @@ namespace BleachVsNarutoMini.Entities
         private const double ThrowChakraCost = 10;
         private const int MaxConsecutiveThrows = 2;          // [Phát thêm] Số lần ném phi tiêu liên tiếp tối đa
         private const double ThrowCooldown = 0.5;            // [Phát thêm] Thời gian chờ sau khi ném 2 lần liên tiếp (0.5 giây)
-        private const double Special1ChakraCost = 140;
+        private const double Special1ChakraCost = 90;
         private const double Special1Cooldown = 0.5;         // [Phát thêm] Thời gian chờ hồi Chiêu đặc biệt 1 (giây)
-        private const double Special2ChakraCost = 140;
+        private const double Special2ChakraCost = 90;
         private const double Special2Cooldown = 0.5;         // [Phát thêm] Thời gian chờ hồi Chiêu đặc biệt 2 (giây)
         private const double UltChakraCost = 100;
         private const double UltCooldown = 2.0;              // [Phát thêm] Thời gian chờ hồi chiêu cuối (2 giây)
+        private const double TransformChakraCost = 130;      // [Phát thêm] Chiêu biến thân W + I tốn 130 Chakra
+        private const double TransformCooldown = 5;        // [Phát thêm] Thời gian hồi chiêu biến thân (5 giây)
         private const double ChakraRegenPerSec = 10;
 
         // [Phát thêm] Thông số thanh Chống đỡ (Guard)
@@ -74,10 +76,27 @@ namespace BleachVsNarutoMini.Entities
         private const double SasukeSp2HitPauseDuration = 0.10; // Thời gian ngắt giữa mỗi nhịp mất máu trên không (0.1s)
         private const double SasukeSp2EndAirDelay = 0.20;      // Thời gian Sasuke đợi trên không sau khi đạp đối thủ xuống (0.2s)
 
+        // [Phát thêm] Thông số chiêu cuối Rasengan của Naruto
+        private const int NarutoRasenganStartFrame = 16;
+        private const int NarutoRasenganTeleportFrame = 37;
+
+        // [Phát thêm] Thông số chiêu biến thân W + I (Vĩ Thú Ngọc) của Naruto
+        private const string TransformOrbPrefix = "Naruto/bienthan/narutohieuungdacbiet";
+        private const double TransformOrbSpeed = 680;            // Tốc độ bay xéo của quả cầu sau khi ném
+        private const double TransformOrbChargeStartSize = 55;   // Kích thước khởi điểm khi mới xuất hiện ở frame 4
+        private const double TransformOrbFlightSize = 200;       // Kích thước khi gồng phình to đầy đủ ở hết frame 9
+        private const double TransformOrbChargeDuration = 0.72;  // Thời gian gồng từ từ qua frame 4 -> 9 tới ngưỡng to nhất (giây)
+        private const double TransformOrbHoldDuration = 0.75;    // Thời gian dừng lại sau khi gồng xong ở frame 9 trước khi ném (giây)
+        private const double TransformOrbMaxExplosionSize = 560; // Kích thước cực đại khi vụ nổ phác tác
+        private const double TransformOrbExpandDuration = 0.65;  // Thời gian vụ nổ cuốn mục tiêu / lan rộng (giây)
+        private const double TransformOrbHandGap = 26;           // Khoảng hở phía trên bàn tay Chakra để quả cầu cao thoáng, không dính tay
+        private const int TransformOrbDirectTotalDamage = 100;   // Sát thương trọn vẹn khi trúng ngay người từ đầu
+        private const int TransformOrbSplashDamage = 60;         // Sát thương ít hơn khi dính rìa vụ nổ lúc phác tác
+
         private const string ShurikenPrefix = "Assets/effect/khiNhanVatPhongPhiTieu/sskanhphitieu";
 
         private readonly FighterConfig _cfg;
-        private Key _left, _right, _jump, _attack, _block, _throw, _ult, _dash, _teleport;
+        private Key _left, _right, _up = Key.W, _jump, _attack, _block, _throw, _ult, _dash, _teleport;
         // [Phát thêm] Phím phụ hỗ trợ cụm phím số bên phải (Numpad 1-6) cho Player 2
         private Key _jumpAlt = Key.None, _attackAlt = Key.None, _throwAlt = Key.None, _ultAlt = Key.None, _dashAlt = Key.None, _teleportAlt = Key.None;
         private readonly ScaleTransform _flip = new(1, 1);
@@ -86,10 +105,11 @@ namespace BleachVsNarutoMini.Entities
         private double _vy, _timer, _stateHoldTimer;
         private double _attackCooldownTimer;       // [Phát thêm] Bộ đếm hồi chiêu sau khi đánh hết chuỗi combo
         private int _attackComboStage;             // [Phát thêm] Đợt đánh hiện tại trong chuỗi combo (0..3)
-        private double _attackComboResetTimer;     // [Phát thêm] Bộ đếm 0.5s giữ chuỗi combo; hết giờ sẽ quay về đợt 1
+        private double _attackComboResetTimer;     // [Phát thêm] Bộ đếm 0.25s giữ chuỗi combo; hết giờ sẽ quay về đợt 1
         private bool _queuedNextAttackStage;       // [Phát thêm] Đánh dấu đã bấm J nối tiếp đợt kế trong lúc đang ra đòn
         private int _lastAttackSteppedFrame = -1;  // [Phát thêm] Ghi nhớ frame đánh vừa nhúc nhích
         private double _dashedDistance, _dashCooldownTimer, _ultDashedDistance;
+        private bool _ultHasTeleported;            // [Phát thêm] Đánh dấu Rasengan của Naruto đã tốc biến ở frame 38 chưa
         private double _teleportCooldownTimer;     // [Phát thêm] Bộ đếm hồi chiêu tốc biến
         private bool _isTeleportAnim;              // [Phát thêm] Đánh dấu đang chạy animation đứng dịch chuyển sau khi tốc biến
         private double _throwCooldownTimer;        // [Phát thêm] Bộ đếm hồi sau 2 lần ném phi tiêu liên tiếp
@@ -98,6 +118,7 @@ namespace BleachVsNarutoMini.Entities
         private double _special1CooldownTimer;    // [Phát thêm] Bộ đếm hồi Chiêu đặc biệt 1
         private double _special2CooldownTimer;    // [Phát thêm] Bộ đếm hồi Chiêu đặc biệt 2
         private double _ultCooldownTimer;          // [Phát thêm] Bộ đếm hồi chiêu cuối
+        private double _transformCooldownTimer;    // [Phát thêm] Bộ đếm hồi chiêu biến thân W + I
         private double _guardRegenTimer;           // [Phát thêm] Bộ đếm thời gian trễ trước khi hồi thanh chống đỡ
         private double _guardVisibleTimer;         // [Phát thêm] Bộ đếm thời gian hiển thị thanh chống đỡ
         private double _hurtDuration = 0.3;
@@ -120,7 +141,7 @@ namespace BleachVsNarutoMini.Entities
         private double _sp2SpinTimer;              // Bộ đếm thời gian mỗi nhịp xoay frame 11
         private int _sp2DealtDamage;               // Tổng sát thương đã gây ra trong các nhịp trước cú đạp cuối
         private bool _sp2HasLaunched;              // Đã đá đối thủ bay lên ở phase 2 chưa
-        private bool _sp2HasSlammed;               // Đã tung cú đạp kết thúc ở phase 5 chưa
+        private bool _sp2HasSlammed;              // Đã tung cú đạp kết thúc ở phase 5 chưa
         private bool _sp2HoveringAfterClip;        // Đánh dấu đã chạy hết 15 frame và đang đứng chờ trên không
         private double _sp2AirHoverTimer;          // Bộ đếm thời gian đứng trên không trước khi rơi xuống
 
@@ -132,6 +153,26 @@ namespace BleachVsNarutoMini.Entities
         private double _sasukeSp2HalfwayFeetY;     // Tọa độ Y giữa quãng rơi để Sasuke tốc biến ra sau lưng
         private bool _sasukeSp2HasSlammed;         // Đã tung cú đập kết thúc ở frame 20 chưa
         private bool _sasukeSp2HoverAfterClip;     // Đã chạy xong frame 23 và đang đợi 0.2s trên không
+
+        // [Phát thêm] Biến điều khiển chiêu biến thân W + I & quả cầu Vĩ Thú Ngọc
+        private int _transformStage;               // 0: frame 1->3, 1: frame 4->9 gồng phình cầu + f16..18, 2: dừng tại frame 9, 3: frame 10->15 + f19..24 ném cầu
+        private double _transformChargeTimer;      // Bộ đếm thời gian gồng phình to (frame 4->9) & thời gian dừng trước khi ném
+        private int _transformOrbPhase;            // 0: tắt, 1: gồng trên tay ở trên đầu, 2: bay xéo về địch, 3: vụ nổ phác tác phóng đại
+        private double _transformOrbX;
+        private double _transformOrbY;
+        private double _transformOrbVx;
+        private double _transformOrbVy;
+        private double _transformOrbSize;
+        private double _transformOrbTraveled;
+        private double _transformOrbMaxDist;
+        private double _transformOrbExpandTimer;
+        private double _transformOrbAnimTimer;
+        private double _transformOrbSpawnTick;
+        private int _transformOrbFrame;
+        private bool _transformOrbFacingRight;
+        private bool _transformOrbDirectHit;       // True nếu trúng ngay người từ lúc đang bay (bị cuốn vào tâm vụ nổ)
+        private bool _transformOrbHasDealtDamage;  // Đánh dấu đã gây sát thương rìa vụ nổ (trường hợp không trúng trực tiếp)
+        private bool _transformWasDown;
 
         private int _frame;
         private int _lastHitFrame = -1;
@@ -160,6 +201,10 @@ namespace BleachVsNarutoMini.Entities
         public double Guard { get; private set; } = MaxGuardValue;
         // [Phát thêm] Chỉ hiện thanh chống đỡ khi đỡ mà bị đánh trúng hoặc trong lúc thanh đang hồi phục
         public bool ShowGuardBar => _guardVisibleTimer > 0 || Guard < MaxGuard;
+
+        private bool IsNarutoRasengan =>
+            _cfg.Ultimate.Count >= 38 &&
+            _cfg.Ultimate.Prefix.StartsWith("Naruto/", StringComparison.OrdinalIgnoreCase);
 
         private double BodyW => Width * _cfg.BodyWidthRatio;
         private double BodyOffsetX => (Width - BodyW) / 2;
@@ -209,14 +254,14 @@ namespace BleachVsNarutoMini.Entities
         {
             if (playerIndex == 1)
             {
-                _left = Key.A; _right = Key.D; _jump = Key.K; _attack = Key.J;
+                _left = Key.A; _right = Key.D; _up = Key.W; _jump = Key.K; _attack = Key.J;
                 _block = Key.S; _throw = Key.U; _ult = Key.I; _dash = Key.L; _teleport = Key.O;
                 _jumpAlt = _attackAlt = _throwAlt = _ultAlt = _dashAlt = _teleportAlt = Key.None;
             }
             else
             {
                 // [Phát thêm] Hỗ trợ cả dãy số trên (D1-D6) lẫn cụm phím số bên phải (NumPad1-NumPad6)
-                _left = Key.Left; _right = Key.Right; _block = Key.Down;
+                _left = Key.Left; _right = Key.Right; _up = Key.Up; _block = Key.Down;
                 _jump = Key.D2; _jumpAlt = Key.NumPad2;
                 _attack = Key.D1; _attackAlt = Key.NumPad1;
                 _throw = Key.D4; _throwAlt = Key.NumPad4;
@@ -235,13 +280,25 @@ namespace BleachVsNarutoMini.Entities
 
         public void UpdateLogic(double dt)
         {
-            if (State == FighterState.Dead) { UpdateDead(dt); Draw(); return; }
+            if (State == FighterState.Dead)
+            {
+                // Vẫn cho phép vụ nổ đang phác tác hoàn tất hiệu ứng ngay cả khi mục tiêu vừa hết máu
+                UpdateTransformOrb(dt);
+                UpdateDead(dt);
+                Draw();
+                return;
+            }
 
-            // [Phát thêm] Kiểm tra trạng thái bị khóa cứng trong combo S + I của đối thủ
+            // [Phát thêm] Cập nhật quả cầu Vĩ Thú Ngọc (gồng frame 4->9 -> chờ -> ném xéo xuống)
+            UpdateTransformOrb(dt);
+
+            // [Phát thêm] Kiểm tra trạng thái bị khóa cứng trong combo S + I hoặc tâm vụ nổ của đối thủ
             if (_isComboLocked)
             {
                 _comboLockTimer -= dt;
-                if (_comboLockTimer <= 0 || Opponent == null || Opponent.IsDead || Opponent.State != FighterState.Special2)
+                bool lockedBySp2 = Opponent != null && !Opponent.IsDead && Opponent.State == FighterState.Special2;
+                bool lockedByOrb = Opponent != null && Opponent._transformOrbPhase == 3 && Opponent._transformOrbDirectHit;
+                if (_comboLockTimer <= 0 || (!lockedBySp2 && !lockedByOrb))
                 {
                     _isComboLocked = false;
                     _comboLockTimer = 0;
@@ -283,8 +340,10 @@ namespace BleachVsNarutoMini.Entities
                 _special2CooldownTimer = Math.Max(0, _special2CooldownTimer - dt);
             if (_ultCooldownTimer > 0)
                 _ultCooldownTimer = Math.Max(0, _ultCooldownTimer - dt);
+            if (_transformCooldownTimer > 0)
+                _transformCooldownTimer = Math.Max(0, _transformCooldownTimer - dt);
 
-            // [Phát thêm] Đếm ngược 0.5s giữ chuỗi combo đánh thường; quá 0.5s không bấm J tiếp sẽ quay lại đấm ban đầu
+            // [Phát thêm] Đếm ngược giữ chuỗi combo đánh thường; quá thời gian không bấm J tiếp sẽ quay lại đấm ban đầu
             if (State != FighterState.Attack && _attackComboStage > 0)
             {
                 _attackComboResetTimer -= dt;
@@ -318,6 +377,11 @@ namespace BleachVsNarutoMini.Entities
             bool ultPressed = ultDown && !_ultWasDown;
             _ultWasDown = ultDown;
 
+            bool upDown = InputManager.IsKeyDown(_up);
+            bool transformDown = upDown && ultDown;
+            bool transformPressed = transformDown && !_transformWasDown;
+            _transformWasDown = transformDown;
+
             bool dashDown = IsActionDown(_dash, _dashAlt);
             bool dashPressed = dashDown && !_dashWasDown;
             _dashWasDown = dashDown;
@@ -329,10 +393,10 @@ namespace BleachVsNarutoMini.Entities
             bool blockDown = InputManager.IsKeyDown(_block);
             int dir = (InputManager.IsKeyDown(_right) ? 1 : 0) - (InputManager.IsKeyDown(_left) ? 1 : 0);
 
-            // [Phát thêm] Nếu đang bị khóa trong combo S + I thì vô hiệu hóa toàn bộ nút điều khiển, chỉ chạy vật lý bị đánh
+            // [Phát thêm] Nếu đang bị khóa trong combo hoặc tâm vụ nổ thì vô hiệu hóa nút điều khiển
             if (_isComboLocked)
             {
-                attackPressed = jumpPressed = throwPressed = ultPressed = dashPressed = teleportPressed = blockDown = false;
+                attackPressed = jumpPressed = throwPressed = ultPressed = transformPressed = dashPressed = teleportPressed = blockDown = false;
                 dir = 0;
             }
 
@@ -358,6 +422,14 @@ namespace BleachVsNarutoMini.Entities
                 {
                     if (!TryTriggerBlockCombos(attackPressed, throwPressed, ultPressed) && Guard > 0)
                         SetState(FighterState.Block);
+                }
+                else if (transformPressed && _cfg.Transform.HasFrames)
+                {
+                    if (_transformCooldownTimer <= 0 && _transformOrbPhase == 0)
+                    {
+                        if (TryUseChakra(TransformChakraCost)) SetState(FighterState.Transform);
+                        else OnNotEnoughChakra?.Invoke();
+                    }
                 }
                 else if (ultPressed)
                 {
@@ -390,7 +462,7 @@ namespace BleachVsNarutoMini.Entities
                     }
                     else OnNotEnoughChakra?.Invoke();
                 }
-                // [Phát thêm] Bấm J trong vòng 0.5s sẽ đánh tiếp đợt kế; quá 0.5s tự quay về đợt 1
+                // [Phát thêm] Bấm J trong thời gian giữ chuỗi sẽ đánh tiếp đợt kế; hết giờ tự quay về đợt 1
                 else if (attackPressed && _attackCooldownTimer <= 0)
                 {
                     if (_attackComboResetTimer <= 0)
@@ -442,7 +514,8 @@ namespace BleachVsNarutoMini.Entities
                     _queuedNextAttackStage = true;
             }
             // Báo thiếu Chakra khi bấm chiêu trong lúc đang ở trạng thái khác
-            else if ((ultPressed && _ultCooldownTimer <= 0 && Chakra < UltChakraCost) ||
+            else if ((transformPressed && _cfg.Transform.HasFrames && _transformCooldownTimer <= 0 && Chakra < TransformChakraCost) ||
+                     (ultPressed && _ultCooldownTimer <= 0 && Chakra < UltChakraCost) ||
                      (throwPressed && _throwCooldownTimer <= 0 && Chakra < ThrowChakraCost) ||
                      (canTeleport && teleportPressed && _teleportCooldownTimer <= 0 && Chakra < TeleportChakraCost))
             {
@@ -487,12 +560,399 @@ namespace BleachVsNarutoMini.Entities
                 case FighterState.Special1: UpdateSpecial1(dt); break;
                 case FighterState.Special2: UpdateSpecial2(dt); break;
                 case FighterState.Ultimate: UpdateUltimate(dt); break;
+                case FighterState.Transform: UpdateTransform(dt); break;
                 case FighterState.Hurt: UpdateHurt(dt); break;
                 case FighterState.Knockdown: UpdateKnockdown(dt); break;
                 case FighterState.GetUp: UpdateOneShotClip(_cfg.GetUp, dt); break;
             }
 
             Draw();
+        }
+
+        // [Phát thêm] Độ cao cánh tay Chakra nâng cao hẳn lên trên đầu Naruto để không bị nhân vật chồng lên
+        private double GetTransformHandOffsetY() => -(BodyH * 1.18);
+
+        // [Phát thêm] Tính tọa độ đỉnh bàn tay Chakra nâng đỡ quả cầu trên đầu Naruto
+        private double GetTransformHandPalmY()
+        {
+            double handBottomY = FeetY + GetTransformHandOffsetY();
+            double handHeight = Height * 1.15;
+            return handBottomY - handHeight * 0.76;
+        }
+
+        // [Phát thêm] Tính tọa độ tâm Y của quả cầu khi gồng: luôn cách đỉnh bàn tay một khoảng thoáng để không dính tay
+        private double GetTransformOrbChargeY(double orbSize) =>
+            GetTransformHandPalmY() - orbSize * 0.5 - TransformOrbHandGap;
+
+        // [Phát thêm] Chiêu biến thân W + I của Naruto:
+        // - Stage 0 (Frame 1 -> 3, index 0..2): bắt đầu biến hình từ từ
+        // - Stage 1 (Frame 4 -> 9, index 3..8): xuất hiện cánh tay Chakra (frame 16..18) và gồng quả cầu phình to từ từ từ frame 4 tới frame 9;
+        //   tới khi quả cầu chạm ngưỡng to nhất thì frame cũng dừng đúng tại frame 9
+        // - Stage 2 (Frame 9, index 8): dừng lại chờ một khoảng thời gian (0.75s) trước khi ném
+        // - Stage 3 (Frame 10 -> 15, index 9..14): vung tay (frame 19..24) và ném xéo quả cầu xuống
+        private void UpdateTransform(double dt)
+        {
+            var clip = _cfg.Transform;
+            if (!clip.HasFrames) { SetState(FighterState.Idle); return; }
+
+            double dir = FacingRight ? 1 : -1;
+            const double handRawOffsetX = 6;
+            double handOffsetY = GetTransformHandOffsetY();
+            double handCenterX = X + Width / 2 + handRawOffsetX * dir;
+            double handTargetY = FeetY + handOffsetY;
+            double slowStartupFrameTime = Math.Max(clip.FrameTime, 0.11);
+
+            // --- STAGE 0: Chạy từ từ Frame 1 -> 3 (index 0..2) ---
+            if (_transformStage == 0)
+            {
+                SetClipImage(clip, _frame);
+                _timer += dt;
+                while (_timer >= slowStartupFrameTime)
+                {
+                    _timer -= slowStartupFrameTime;
+                    _frame++;
+
+                    // Khi Frame 4 (index 3) bắt đầu: xuất hiện cánh tay Chakra & bắt đầu gồng quả cầu
+                    if (_frame >= 3)
+                    {
+                        _frame = 3;
+                        _timer = 0;
+                        _transformStage = 1;
+                        _transformChargeTimer = 0;
+
+                        // Cánh tay frame 16, 17, 18 tồn tại suốt thời gian gồng (TransformOrbChargeDuration) cộng thêm thời gian dừng chờ ném
+                        double holdStageDuration = TransformOrbChargeDuration + TransformOrbHoldDuration;
+                        OnSpawnEffect?.Invoke(new DustEffect(
+                            clip.Prefix, 16, 3, holdStageDuration / 3.0,
+                            handCenterX, handTargetY, Width * 1.15, Height * 1.15,
+                            false, _cfg.FootPadding, FacingRight, 4,
+                            this, FighterState.Transform, handRawOffsetX, handOffsetY, false));
+
+                        // Quả cầu đồng thời xuất hiện trên tay ở trên cao để gồng từ frame 4 -> 9
+                        _transformOrbPhase = 1;
+                        _transformOrbSize = TransformOrbChargeStartSize;
+                        _transformOrbTraveled = 0;
+                        _transformOrbMaxDist = 0;
+                        _transformOrbExpandTimer = 0;
+                        _transformOrbAnimTimer = 0;
+                        _transformOrbSpawnTick = 0;
+                        _transformOrbFrame = 0;
+                        _transformOrbFacingRight = FacingRight;
+                        _transformOrbDirectHit = false;
+                        _transformOrbHasDealtDamage = false;
+                        _transformOrbX = handCenterX;
+                        _transformOrbY = GetTransformOrbChargeY(_transformOrbSize);
+                        break;
+                    }
+                }
+                return;
+            }
+
+            // --- STAGE 1: Frame chạy từ từ từ 4 tới 9 (index 3..8) đồng bộ với độ phình quả cầu ---
+            if (_transformStage == 1)
+            {
+                _transformChargeTimer += dt;
+                double progress = Math.Clamp(_transformChargeTimer / TransformOrbChargeDuration, 0.0, 1.0);
+
+                // Chia đều 6 frame (index 3, 4, 5, 6, 7, 8) theo đúng tiến độ phình to của quả cầu
+                int targetFrame = Math.Min(8, 3 + (int)(progress * 6.0));
+                _frame = targetFrame;
+                SetClipImage(clip, _frame);
+
+                if (_transformChargeTimer >= TransformOrbChargeDuration)
+                {
+                    _frame = 8; // Chạm ngưỡng to nhất thì frame cũng dừng đúng tại Frame 9 (index 8)
+                    _timer = 0;
+                    _transformChargeTimer = 0;
+                    _transformStage = 2;
+                    _transformOrbSize = TransformOrbFlightSize;
+                }
+                return;
+            }
+
+            // --- STAGE 2: Quả cầu đã chạm ngưỡng cao nhất -> frame dừng tại Frame 9 chờ một thời gian (0.75s) ---
+            if (_transformStage == 2)
+            {
+                _frame = 8;
+                SetClipImage(clip, _frame);
+                _transformChargeTimer += dt;
+                if (_transformChargeTimer >= TransformOrbHoldDuration)
+                {
+                    _transformStage = 3;
+                    _frame = 9; // Bắt đầu chạy tiếp Frame 10 -> 15 (index 9..14)
+                    _timer = 0;
+
+                    // Đồng thời frame 19 -> 24 (6 frame) cũng hoạt động khớp thời gian với frame 10 -> 15
+                    int remainingFrames = Math.Max(1, clip.Count - 9);
+                    double throwArmFrameTime = (remainingFrames * clip.FrameTime) / 6.0;
+                    OnSpawnEffect?.Invoke(new DustEffect(
+                        clip.Prefix, 19, 6, throwArmFrameTime,
+                        handCenterX, handTargetY, Width * 1.15, Height * 1.15,
+                        false, _cfg.FootPadding, FacingRight, 4,
+                        this, FighterState.Transform, handRawOffsetX, handOffsetY, false));
+                }
+                return;
+            }
+
+            // --- STAGE 3: Chạy tiếp Frame 10 -> 15 (index 9..14) đồng thời với Frame 19 -> 24 để ném cầu ---
+            int releaseFrame = Math.Min(11, clip.Count - 1);
+            if (_frame >= releaseFrame && _transformOrbPhase == 1)
+            {
+                LaunchTransformOrbDiagonal(dir);
+            }
+
+            SetClipImage(clip, _frame);
+
+            if (Advance(clip.Count, clip.FrameTime, false, dt))
+                SetState(FighterState.Idle);
+        }
+
+        // [Phát thêm] Tính hướng ném xéo xuống dưới và tránh kích nổ giả khi đứng sát tường
+        private void LaunchTransformOrbDiagonal(double dir)
+        {
+            _transformOrbPhase = 2;
+            _transformOrbSize = TransformOrbFlightSize;
+            _transformOrbTraveled = 0;
+            _transformOrbFacingRight = FacingRight;
+            _transformOrbDirectHit = false;
+            _transformOrbHasDealtDamage = false;
+
+            // Đảm bảo điểm xuất phát không chạm sẵn vào tường ở sát mép màn hình
+            double minStartX = StageMargin + 40;
+            double maxStartX = Math.Max(minStartX + 40, StageWidth - StageMargin - 40);
+            _transformOrbX = Math.Clamp(_transformOrbX + dir * 20, minStartX, maxStartX);
+
+            double targetX = Math.Clamp(_transformOrbX + dir * 380, minStartX, maxStartX);
+            double targetY = GroundY - 18;
+
+            if (Opponent != null && !Opponent.IsDead)
+            {
+                double oppCenterX = Opponent.BodyX + Opponent.BodyW / 2;
+                double oppCenterY = Opponent.BodyTop + Opponent.BodyH * 0.55;
+                bool inFront = (dir > 0 && oppCenterX >= _transformOrbX - 20)
+                            || (dir < 0 && oppCenterX <= _transformOrbX + 20);
+
+                if (inFront)
+                {
+                    targetX = Math.Clamp(oppCenterX, minStartX, maxStartX);
+                    targetY = Math.Clamp(oppCenterY, _transformOrbY + 45, GroundY - 18);
+                }
+            }
+
+            double dx = targetX - _transformOrbX;
+            double dy = Math.Max(140, targetY - _transformOrbY); // Luôn có độ dốc xéo xuống ít nhất 140px
+            double dist = Math.Sqrt(dx * dx + dy * dy);
+
+            _transformOrbVx = (dx / dist) * TransformOrbSpeed;
+            _transformOrbVy = (dy / dist) * TransformOrbSpeed;
+            _transformOrbMaxDist = dist;
+        }
+
+        // [Phát thêm] Cập nhật quả cầu Vĩ Thú Ngọc:
+        // - Phase 1: phình to dần từ frame 4 -> 9 ở Stage 1, giữ nguyên ở Stage 2 (0.75s)
+        // - Phase 2: bay xéo về phía địch (chỉ xét tường theo đúng hướng bay để không tự nổ khi đứng sát tường)
+        // - Phase 3: nổ ngay tại điểm va chạm/mặt đất và phóng to lên 560px để phần dưới tự nhiên chồi xuống đất một chút
+        private void UpdateTransformOrb(double dt)
+        {
+            if (_transformOrbPhase == 0) return;
+
+            // Loop liên tục 4 frame hiệu ứng quả cầu trong suốt mọi giai đoạn
+            _transformOrbAnimTimer += dt;
+            while (_transformOrbAnimTimer >= 0.04)
+            {
+                _transformOrbAnimTimer -= 0.04;
+                _transformOrbFrame = (_transformOrbFrame + 1) % 4;
+            }
+
+            double dir = FacingRight ? 1 : -1;
+
+            // Phase 1: Phình to dần từ frame 4 -> 9 ở Stage 1 và giữ nguyên kích thước to trong lúc dừng chờ ở Stage 2
+            if (_transformOrbPhase == 1)
+            {
+                if (State != FighterState.Transform)
+                {
+                    _transformOrbPhase = 0;
+                    return;
+                }
+
+                double progress = _transformStage == 1
+                    ? Math.Clamp(_transformChargeTimer / TransformOrbChargeDuration, 0.0, 1.0)
+                    : 1.0;
+
+                _transformOrbSize = TransformOrbChargeStartSize + progress * (TransformOrbFlightSize - TransformOrbChargeStartSize);
+                _transformOrbFacingRight = FacingRight;
+                _transformOrbX = X + Width / 2 + 6 * dir;
+                _transformOrbY = GetTransformOrbChargeY(_transformOrbSize);
+            }
+            // Phase 2: Bay xéo về phía địch
+            else if (_transformOrbPhase == 2)
+            {
+                double step = TransformOrbSpeed * dt;
+                _transformOrbX += _transformOrbVx * dt;
+                _transformOrbY += _transformOrbVy * dt;
+                _transformOrbTraveled += step;
+
+                double leftWallX = StageMargin + 28;
+                double rightWallX = Math.Max(leftWallX + 40, StageWidth - StageMargin - 28);
+                double maxBoundY = GroundY - 18;
+
+                bool hitStageEdge = false;
+                if (_transformOrbVx < -1 && _transformOrbX <= leftWallX)
+                {
+                    _transformOrbX = leftWallX;
+                    hitStageEdge = true;
+                }
+                else if (_transformOrbVx > 1 && _transformOrbX >= rightWallX)
+                {
+                    _transformOrbX = rightWallX;
+                    hitStageEdge = true;
+                }
+
+                if (_transformOrbY >= maxBoundY)
+                {
+                    _transformOrbY = maxBoundY;
+                    hitStageEdge = true;
+                }
+
+                double half = _transformOrbSize * 0.36;
+                Rect flightBox = new(_transformOrbX - half, _transformOrbY - half, half * 2, half * 2);
+
+                bool hitEnemy = Opponent != null && !Opponent.IsDead && flightBox.IntersectsWith(Opponent.Bounds);
+
+                if (hitEnemy && Opponent != null)
+                {
+                    // Trúng ngay người nhân vật từ đầu -> nổ ngay tại đúng người địch
+                    _transformOrbDirectHit = true;
+                    _transformOrbPhase = 3;
+                    _transformOrbExpandTimer = 0;
+                    _transformOrbX = Opponent.BodyX + Opponent.BodyW / 2;
+                    _transformOrbY = Opponent.BodyTop + Opponent.BodyH * 0.55;
+
+                    int initialDamage = 40;
+                    Opponent.TakeDamage(
+                        initialDamage,
+                        stunDuration: TransformOrbExpandDuration + 0.35,
+                        knockdown: false,
+                        sourceX: _transformOrbX,
+                        isUltimate: true);
+
+                    if (!Opponent.IsDead)
+                    {
+                        Opponent._isComboLocked = true;
+                        Opponent._comboLockTimer = TransformOrbExpandDuration + 0.35;
+                        Opponent._knockbackVelocity = 0;
+                        Opponent._vy = 0;
+                    }
+                }
+                else if (_transformOrbTraveled >= _transformOrbMaxDist || hitStageEdge)
+                {
+                    // Không trúng trực tiếp -> quả cầu nổ ngay tại điểm chạm mặt đất/mục tiêu
+                    _transformOrbDirectHit = false;
+                    _transformOrbHasDealtDamage = false;
+                    _transformOrbPhase = 3;
+                    _transformOrbExpandTimer = 0;
+                }
+            }
+            // Phase 3: Vụ nổ phác tác tại chỗ, loop và phóng to lên 560px để phần dưới tự nhiên chồi xuống đất một chút
+            else if (_transformOrbPhase == 3)
+            {
+                _transformOrbExpandTimer += dt;
+                double t = Math.Clamp(_transformOrbExpandTimer / TransformOrbExpandDuration, 0.0, 1.0);
+                _transformOrbSize = TransformOrbFlightSize + t * (TransformOrbMaxExplosionSize - TransformOrbFlightSize);
+
+                // Giữ tâm vụ nổ nằm gọn hai bên tường và không vượt quá mặt đất (để rìa dưới chồi nhẹ xuống đất)
+                double safeEdgeX = Math.Min(StageWidth * 0.22, 115);
+                _transformOrbX = Math.Clamp(_transformOrbX, StageMargin + safeEdgeX, Math.Max(StageMargin + safeEdgeX + 20, StageWidth - StageMargin - safeEdgeX));
+                _transformOrbY = Math.Clamp(_transformOrbY, 80, GroundY);
+
+                if (_transformOrbDirectHit)
+                {
+                    // Cuốn nhân vật dính chiêu vào trong tâm vụ nổ (vụ nổ ZIndex = 5 che đi nhân vật)
+                    if (Opponent != null && !Opponent.IsDead)
+                    {
+                        Opponent._isComboLocked = true;
+                        Opponent._comboLockTimer = 0.3;
+                        Opponent._knockbackVelocity = 0;
+                        Opponent._vy = 0;
+                        Opponent.X = Opponent.ClampStageX(_transformOrbX - Opponent.BodyW / 2 - Opponent.BodyOffsetX);
+                    }
+
+                    // Kết thúc vụ nổ: giáng nốt 60 máu (tổng 100 máu) và cho nhân vật nằm ngất trên đất
+                    if (_transformOrbExpandTimer >= TransformOrbExpandDuration)
+                    {
+                        if (Opponent != null)
+                        {
+                            Opponent._isComboLocked = false;
+                            Opponent._comboLockTimer = 0;
+                            if (!Opponent.IsDead)
+                            {
+                                int finishDamage = TransformOrbDirectTotalDamage - 40;
+                                Opponent.TakeDamage(
+                                    finishDamage,
+                                    stunDuration: KnockdownGroundDuration,
+                                    knockdown: true,
+                                    sourceX: _transformOrbX,
+                                    isUltimate: true);
+                                Opponent._knockbackVelocity = 0;
+                            }
+                        }
+                        _transformOrbPhase = 0;
+                        return;
+                    }
+                }
+                else
+                {
+                    // Trường hợp không trúng từ đầu: kiểm tra nếu đối thủ dính rìa vụ nổ đang phác tác -> hất văng & ngất (60 máu)
+                    if (!_transformOrbHasDealtDamage && Opponent != null && !Opponent.IsDead)
+                    {
+                        double oppCenterX = Opponent.BodyX + Opponent.BodyW / 2;
+                        double oppCenterY = Opponent.BodyTop + Opponent.BodyH / 2;
+                        double dx = oppCenterX - _transformOrbX;
+                        double dy = oppCenterY - _transformOrbY;
+                        double dist = Math.Sqrt(dx * dx + dy * dy);
+
+                        double activeSplashRadius = _transformOrbSize * 0.46;
+                        if (dist <= activeSplashRadius)
+                        {
+                            _transformOrbHasDealtDamage = true;
+                            Opponent.TakeDamage(
+                                TransformOrbSplashDamage,
+                                stunDuration: KnockdownGroundDuration,
+                                knockdown: true,
+                                sourceX: _transformOrbX,
+                                isUltimate: true);
+
+                            if (!Opponent.IsDead)
+                            {
+                                double pushDir = oppCenterX >= _transformOrbX ? 1 : -1;
+                                Opponent._knockbackVelocity = pushDir * 360;
+                                Opponent._vy = -380;
+                            }
+                        }
+                    }
+
+                    if (_transformOrbExpandTimer >= TransformOrbExpandDuration)
+                    {
+                        _transformOrbPhase = 0;
+                        return;
+                    }
+                }
+            }
+
+            // Lúc gồng (Phase 1) dùng ZIndex = 2 (nằm sau cánh tay ZIndex = 4 để không che tay);
+            // Lúc bay & phát nổ (Phase 2-3) dùng ZIndex = 5 để che phủ nhân vật bị cuốn vào vụ nổ
+            int orbZIndex = _transformOrbPhase == 1 ? 2 : 5;
+
+            _transformOrbSpawnTick -= dt;
+            if (_transformOrbSpawnTick <= 0)
+            {
+                _transformOrbSpawnTick = 0.022;
+                OnSpawnEffect?.Invoke(new DustEffect(
+                    TransformOrbPrefix, _transformOrbFrame + 1, 1, 0.038,
+                    _transformOrbX, _transformOrbY, _transformOrbSize, _transformOrbSize,
+                    true, 0, _transformOrbFacingRight, orbZIndex,
+                    null, FighterState.Idle, 0, 0, false));
+            }
         }
 
         // [Phát thêm] Tốc biến ra sau lưng đối thủ, thả hiệu ứng 2 đầu và chạy animation dịch chuyển (_cfg.Dash)
@@ -518,6 +978,17 @@ namespace BleachVsNarutoMini.Entities
 
             if (keepUltimate)
             {
+                if (IsNarutoRasengan)
+                {
+                    if (_frame < NarutoRasenganTeleportFrame)
+                    {
+                        _frame = NarutoRasenganTeleportFrame;
+                        _timer = 0;
+                    }
+                    _ultHasTeleported = true;
+                    return;
+                }
+
                 int chargeFrames = _cfg.UltimateChargeFrames > 0 ? _cfg.UltimateChargeFrames : _cfg.Ultimate.Count / 2;
                 if (_frame < chargeFrames)
                 {
@@ -538,6 +1009,29 @@ namespace BleachVsNarutoMini.Entities
             {
                 SetState(IsStandingOnSurface() ? FighterState.Idle : FighterState.Jump);
             }
+        }
+
+        // [Phát thêm] Tốc biến tầm cố định (bằng UltimateDashDistance) kèm hiệu ứng dịch chuyển của Naruto tại frame 38 của Rasengan
+        private void PerformNarutoRasenganTeleport()
+        {
+            SpawnTeleportEffect();
+
+            double dir = FacingRight ? 1 : -1;
+            double travelDistance = _cfg.UltimateDashDistance;
+
+            if (Opponent != null && !Opponent.IsDead)
+            {
+                double gapToOpponent = FacingRight
+                    ? (Opponent.BodyX - (BodyX + BodyW))
+                    : (BodyX - (Opponent.BodyX + Opponent.BodyW));
+
+                if (gapToOpponent >= -10 && gapToOpponent < travelDistance)
+                    travelDistance = Math.Max(0, gapToOpponent - 4);
+            }
+
+            X = ClampStageX(X + dir * travelDistance);
+
+            SpawnTeleportEffect();
         }
 
         // [Phát thêm] Sinh hiệu ứng dịch chuyển riêng của nhân vật (hoặc bụi mặc định) tại vị trí hiện tại
@@ -732,8 +1226,10 @@ namespace BleachVsNarutoMini.Entities
             // Chiêu cuối (Rasengan / Chidori)
             else if (State == FighterState.Ultimate)
             {
-                int chargeFrames = _cfg.UltimateChargeFrames > 0 ? _cfg.UltimateChargeFrames : _cfg.Ultimate.Count / 2;
-                if (_frame < chargeFrames || _skillHasHit) return;
+                int activeFrame = IsNarutoRasengan
+                    ? NarutoRasenganTeleportFrame
+                    : (_cfg.UltimateChargeFrames > 0 ? _cfg.UltimateChargeFrames : _cfg.Ultimate.Count / 2);
+                if (_frame < activeFrame || _skillHasHit) return;
 
                 if (SkillBox.IntersectsWith(target.Bounds))
                 {
@@ -794,8 +1290,9 @@ namespace BleachVsNarutoMini.Entities
                 return;
             }
 
-            // Chống ngắt chiêu giữa chừng khi nhân vật đang thi triển Chiêu cuối hoặc đã vào nhịp combo S + I
-            if (State == FighterState.Ultimate || (State == FighterState.Special2 && (_sp2Phase > 1 || _sasukeSp2Phase > 1))) return;
+            // Chống ngắt chiêu giữa chừng khi nhân vật đang thi triển Chiêu cuối, Biến thân hoặc đã vào nhịp combo S + I
+            if (State == FighterState.Ultimate || State == FighterState.Transform ||
+                (State == FighterState.Special2 && (_sp2Phase > 1 || _sasukeSp2Phase > 1))) return;
 
             // [Phát thêm] Frame cuối của nhảy đánh trên không / cú đạp cuối S + I: rớt nhanh xuống đất ở tư thế nằm và bung bụi khi chạm đất
             if (airSlam)
@@ -1161,7 +1658,7 @@ namespace BleachVsNarutoMini.Entities
                         return;
                     }
 
-                    // Kết thúc đợt hiện tại: xong đợt 4 thì reset chuỗi & áp dụng cooldown; chưa hết thì mở cửa sổ 0.5s
+                    // Kết thúc đợt hiện tại: xong đợt 4 thì reset chuỗi & áp dụng cooldown; chưa hết thì mở cửa sổ giữ chuỗi
                     if (_attackComboStage >= 3)
                     {
                         _attackComboStage = 0;
@@ -1497,7 +1994,6 @@ namespace BleachVsNarutoMini.Entities
         }
 
         // [Phát thêm] Chiêu liên hoàn S + I của Sasuke (Special2 - 23 frames: sasukedacbiet1 -> sasukedacbiet23):
-        // Sát thương toàn chuỗi tự động chia tỷ lệ từ _cfg.Special2Damage trong Sasuke.cs
         private void UpdateSasukeSpecial2(double dt)
         {
             var clip = _cfg.Special2;
@@ -1513,7 +2009,6 @@ namespace BleachVsNarutoMini.Entities
                     X = ClampStageX(X + dir * 4);
                 }
 
-                // Tại frame 4 (index 3): tung cú đá hất đối thủ bay vút lên cao
                 if (_frame == 3 && !_skillHasHit && Opponent != null && !Opponent.IsDead)
                 {
                     Rect reachBox = FacingRight
@@ -1531,7 +2026,7 @@ namespace BleachVsNarutoMini.Entities
                         {
                             Opponent._isComboLocked = true;
                             Opponent._comboLockTimer = 4.5;
-                            Opponent._vy = -1080;                  // Bay lên cao hơn mức mặc định (-920)
+                            Opponent._vy = -1080;
                             Opponent._knockbackVelocity = dir * 35;
                         }
                     }
@@ -1552,7 +2047,6 @@ namespace BleachVsNarutoMini.Entities
                             return;
                         }
 
-                        // Đợi đối thủ bay lên cao hơn rồi mới tốc biến bằng frame 6
                         _frame = 4;
                         _sasukeSp2Phase = 2;
                         _sasukeSp2SubStep = 0;
@@ -1607,7 +2101,7 @@ namespace BleachVsNarutoMini.Entities
                             ? (Opponent.BodyX - BodyW - 6 - BodyOffsetX)
                             : (Opponent.BodyX + Opponent.BodyW + 6 - BodyOffsetX);
                         X = ClampStageX(inFrontX);
-                        Y = Math.Max(15, Opponent.Y - 26); // Cao hơn đối thủ một chút
+                        Y = Math.Max(15, Opponent.Y - 26);
                         FacingRight = oppCenterX >= (BodyX + BodyW / 2);
                         _vy = 0;
 
@@ -1774,7 +2268,7 @@ namespace BleachVsNarutoMini.Entities
 
                         X = ClampStageX(behindX);
                         Y = Math.Max(15, Opponent.Y - 18);
-                        FacingRight = oppCenterX >= (BodyX + BodyW / 2); // Frame 6 hướng mặt vào lưng đối thủ
+                        FacingRight = oppCenterX >= (BodyX + BodyW / 2);
 
                         _frame = 5;
                         SetClipImage(clip, 5);
@@ -1785,7 +2279,6 @@ namespace BleachVsNarutoMini.Entities
                     return;
                 }
 
-                // Bắt đầu frame 19 -> 23: đảo dấu FacingRight vì ảnh frame 19..23 được vẽ quay sang trái
                 SetClipImage(clip, 5);
                 _sasukeSp2Timer -= dt;
                 if (_sasukeSp2Timer <= 0)
@@ -1871,6 +2364,22 @@ namespace BleachVsNarutoMini.Entities
 
         private void UpdateUltimate(double dt)
         {
+            // [Phát thêm] Chiêu cuối Rasengan của Naruto: đứng tụ lực tới frame 38 (index 37) mới tốc biến tới trước & tung chiêu
+            if (IsNarutoRasengan)
+            {
+                if (_frame >= NarutoRasenganTeleportFrame && !_ultHasTeleported)
+                {
+                    _ultHasTeleported = true;
+                    PerformNarutoRasenganTeleport();
+                }
+
+                SetClipImage(_cfg.Ultimate, _frame);
+
+                if (Advance(_cfg.Ultimate.Count, _cfg.Ultimate.FrameTime, false, dt))
+                    SetState(FighterState.Idle);
+                return;
+            }
+
             SetClipImage(_cfg.Ultimate, _frame);
 
             int chargeFrames = _cfg.UltimateChargeFrames > 0 ? _cfg.UltimateChargeFrames : _cfg.Ultimate.Count / 2;
@@ -2033,6 +2542,9 @@ namespace BleachVsNarutoMini.Entities
             if (State == FighterState.Ultimate && s != FighterState.Ultimate)
                 _ultCooldownTimer = UltCooldown;
 
+            if (State == FighterState.Transform && s != FighterState.Transform)
+                _transformCooldownTimer = TransformCooldown;
+
             if ((State == FighterState.Throw || State == FighterState.JumpThrow) &&
                 s != FighterState.Throw && s != FighterState.JumpThrow)
             {
@@ -2053,7 +2565,7 @@ namespace BleachVsNarutoMini.Entities
                 _isComboLocked = false;
             }
 
-            if (s == FighterState.Dash || s == FighterState.Ultimate || s == FighterState.Special2)
+            if (s == FighterState.Dash || s == FighterState.Ultimate || s == FighterState.Special2 || s == FighterState.Transform)
             {
                 _knockbackVelocity = 0;
                 _pendingKnockbackVelocity = 0;
@@ -2096,6 +2608,9 @@ namespace BleachVsNarutoMini.Entities
             _sasukeSp2HasSlammed = false;
             _sasukeSp2HoverAfterClip = false;
 
+            _transformStage = 0;
+            _transformChargeTimer = 0;
+
             _isTeleportAnim = false;
             State = s;
             _frame = 0;
@@ -2107,7 +2622,13 @@ namespace BleachVsNarutoMini.Entities
             _hasSpawnedSkillObj = false;
             _skillHasHit = false;
             _ultDashedDistance = 0;
+            _ultHasTeleported = false;
             _dashedDistance = 0;
+
+            if (s == FighterState.Ultimate && IsNarutoRasengan)
+            {
+                _frame = NarutoRasenganStartFrame;
+            }
 
             if (s == FighterState.Attack)
             {

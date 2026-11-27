@@ -6,6 +6,13 @@ namespace BleachVsNarutoMini.Entities
     {
         private static readonly FighterConfig Config = new()
         {
+            Transform = new AnimClip
+            {
+                Prefix = "Naruto/bienthan/narutochieudacbiet",
+                Start = 1,
+                Frames = 15,
+                FrameTime = 0.068
+            },
             Idle = new AnimClip { Prefix = "Naruto/dung/narutodung", Start = 1, Frames = 6, FrameTime = 0.12 },
             Run = new AnimClip { Prefix = "Naruto/chay/narutochay", Start = 1, Frames = 6, FrameTime = 0.08 },
             Jump = new AnimClip { Prefix = "Naruto/nhay/narutonhay", Start = 1, Frames = 5, FrameTime = 0.10 },
