@@ -190,7 +190,7 @@ namespace BleachVsNarutoMini.Entities
         public bool IsDead => Hp <= 0;
 
         public double StageWidth { get; set; } = 1024;
-        public double GroundY { get; set; } = 620;
+        public double GroundY { get; set; } = 565;
         public IReadOnlyList<Rect> Platforms { get; set; } = Array.Empty<Rect>();
         public event Action<Projectile>? OnSpawnProjectile;
         public event Action? OnNotEnoughChakra;

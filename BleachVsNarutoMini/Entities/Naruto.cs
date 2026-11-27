@@ -79,7 +79,7 @@ namespace BleachVsNarutoMini.Entities
             Height = 94,
             BodyWidthRatio = 0.5,
             AttackReach = 22,
-            GroundBottom = 620,
+            GroundBottom = 565,
             FootPadding = 3,
             StartFacingRight = true
         };

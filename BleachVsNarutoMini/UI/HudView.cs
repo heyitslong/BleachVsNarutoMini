@@ -6,11 +6,9 @@ using System.Windows.Threading;
 
 namespace BleachVsNarutoMini.UI
 {
-    // Thanh máu (đổi màu theo %)
     public class HealthBar : Grid
     {
         private readonly ProgressBar _bar;
-        // [Phát thêm] Đã xóa TextBlock _text để ẩn dòng chữ số máu (300 / 300) trên thanh máu
 
         public HealthBar(bool rightToLeft)
         {
@@ -21,11 +19,10 @@ namespace BleachVsNarutoMini.UI
                 Minimum = 0,
                 Maximum = 100,
                 Value = 100,
-                Background = new SolidColorBrush(Color.FromRgb(0x33, 0x33, 0x33)),
-                Foreground = new SolidColorBrush(Color.FromRgb(0x4C, 0xAF, 0x50)),
-                BorderBrush = Brushes.Black,
-                BorderThickness = new Thickness(1),
-                // P2: thanh máu giảm từ trái sang phải
+                Background = new SolidColorBrush(Color.FromRgb(0x1B, 0x14, 0x14)), // Đáy tối
+                Foreground = new SolidColorBrush(Color.FromRgb(0x2E, 0x7D, 0x32)), // Xanh rêu trận mạc
+                BorderBrush = new SolidColorBrush(Color.FromRgb(0x3E, 0x27, 0x23)),
+                BorderThickness = new Thickness(2),
                 FlowDirection = rightToLeft ? FlowDirection.RightToLeft : FlowDirection.LeftToRight
             };
 
@@ -40,36 +37,34 @@ namespace BleachVsNarutoMini.UI
             _bar.Maximum = max;
             _bar.Value = value;
 
-            // Xanh > 50%, vàng > 25%, đỏ còn lại
             double pct = value / max;
-            Color c = pct > 0.5 ? Color.FromRgb(0x4C, 0xAF, 0x50)
-                    : pct > 0.25 ? Color.FromRgb(0xFF, 0xC1, 0x07)
-                    : Color.FromRgb(0xF4, 0x43, 0x36);
+            Color c = pct > 0.5 ? Color.FromRgb(0x38, 0x8E, 0x3C)
+                    : pct > 0.25 ? Color.FromRgb(0xF5, 0x7F, 0x17) // Cam cháy
+                    : Color.FromRgb(0xB7, 0x1C, 0x1C); // Đỏ thẫm
             _bar.Foreground = new SolidColorBrush(c);
         }
     }
 
-    // Thanh Chakra (kèm hiệu ứng báo đỏ và rung khi bấm chiêu lúc thiếu năng lượng)
     public class ChakraBar : Border
     {
         private readonly ProgressBar _bar;
-        private readonly TranslateTransform _shakeTransform = new(); // [Phát thêm] Dịch chuyển ngang để tạo hiệu ứng rung
-        private readonly DispatcherTimer _warnTimer;                 // [Phát thêm] Bộ đếm thời gian cảnh báo (0.35s)
+        private readonly TranslateTransform _shakeTransform = new();
+        private readonly DispatcherTimer _warnTimer;
         private double _warnElapsed;
 
-        private static readonly Brush NormalBorder = Brushes.Black;
-        private static readonly Brush NormalBg = new SolidColorBrush(Color.FromRgb(0x1E, 0x29, 0x3B));
-        private static readonly Brush NormalFg = new SolidColorBrush(Color.FromRgb(0x21, 0x96, 0xF3));
-        private static readonly Brush WarnBorder = new SolidColorBrush(Color.FromRgb(0xFF, 0x17, 0x44));
-        private static readonly Brush WarnBg = new SolidColorBrush(Color.FromRgb(0x5C, 0x10, 0x1A));
-        private static readonly Brush WarnFg = new SolidColorBrush(Color.FromRgb(0xFF, 0x52, 0x52));
+        private static readonly Brush NormalBorder = new SolidColorBrush(Color.FromRgb(0x21, 0x21, 0x21));
+        private static readonly Brush NormalBg = new SolidColorBrush(Color.FromRgb(0x12, 0x14, 0x1A));
+        private static readonly Brush NormalFg = new SolidColorBrush(Color.FromRgb(0x15, 0x65, 0xC0)); // Lam thẫm
+        private static readonly Brush WarnBorder = new SolidColorBrush(Color.FromRgb(0xB7, 0x1C, 0x1C));
+        private static readonly Brush WarnBg = new SolidColorBrush(Color.FromRgb(0x3E, 0x0C, 0x0C));
+        private static readonly Brush WarnFg = new SolidColorBrush(Color.FromRgb(0xD3, 0x2F, 0x2F));
 
         public ChakraBar(bool rightToLeft)
         {
             Height = 14;
             Margin = new Thickness(0, 4, 0, 0);
             BorderBrush = NormalBorder;
-            BorderThickness = new Thickness(1);
+            BorderThickness = new Thickness(1.5);
             RenderTransform = _shakeTransform;
 
             _bar = new ProgressBar
@@ -85,7 +80,6 @@ namespace BleachVsNarutoMini.UI
 
             Child = _bar;
 
-            // [Phát thêm] Timer chạy hiệu ứng rung và đổi màu đỏ trong 0.35 giây
             _warnTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(16) };
             _warnTimer.Tick += OnWarnTick;
         }
@@ -94,12 +88,10 @@ namespace BleachVsNarutoMini.UI
         {
             if (max <= 0) max = 1;
             value = Math.Max(0, Math.Min(value, max));
-
             _bar.Maximum = max;
             _bar.Value = value;
         }
 
-        // [Phát thêm] Kích hoạt cảnh báo đỏ + rung ngang khi bấm chiêu lúc thiếu Chakra
         public void TriggerWarning()
         {
             _warnElapsed = 0;
@@ -124,13 +116,11 @@ namespace BleachVsNarutoMini.UI
                 return;
             }
 
-            // Biên độ rung giảm dần theo thời gian
             double decay = 1.0 - (_warnElapsed / duration);
             _shakeTransform.X = Math.Sin(_warnElapsed * 55) * 6 * decay;
         }
     }
 
-    // [Phát thêm] Thanh chống đỡ màu trắng hơi trong suốt, rộng bằng 1/3 thanh Chakra, mặc định ẩn khi chưa bị đánh trúng thế đỡ
     public class GuardBar : Border
     {
         private readonly ProgressBar _bar;
@@ -140,17 +130,17 @@ namespace BleachVsNarutoMini.UI
             Height = 8;
             Margin = new Thickness(0, 3, 0, 0);
             HorizontalAlignment = rightToLeft ? HorizontalAlignment.Right : HorizontalAlignment.Left;
-            BorderBrush = new SolidColorBrush(Color.FromArgb(0x88, 0x00, 0x00, 0x00));
+            BorderBrush = new SolidColorBrush(Color.FromArgb(0x99, 0x1A, 0x13, 0x13));
             BorderThickness = new Thickness(1);
-            Visibility = Visibility.Hidden; // [Phát thêm] Mặc định ẩn thanh chống đỡ
+            Visibility = Visibility.Hidden;
 
             _bar = new ProgressBar
             {
                 Minimum = 0,
                 Maximum = 45,
                 Value = 45,
-                Background = new SolidColorBrush(Color.FromArgb(0x45, 0x00, 0x00, 0x00)),
-                Foreground = new SolidColorBrush(Color.FromArgb(0xB8, 0xFF, 0xFF, 0xFF)), // [Phát thêm] Màu trắng hơi trong suốt
+                Background = new SolidColorBrush(Color.FromArgb(0x55, 0x11, 0x11, 0x11)),
+                Foreground = new SolidColorBrush(Color.FromArgb(0xC0, 0xD7, 0xCC, 0xC8)), // Trắng đục gỉ
                 BorderThickness = new Thickness(0),
                 FlowDirection = rightToLeft ? FlowDirection.RightToLeft : FlowDirection.LeftToRight
             };
@@ -162,13 +152,11 @@ namespace BleachVsNarutoMini.UI
         {
             if (max <= 0) max = 1;
             value = Math.Max(0, Math.Min(value, max));
-
             _bar.Maximum = max;
             _bar.Value = value;
         }
     }
 
-    // Giao diện HUD tổng hợp phía trên màn hình trận đấu
     public class HudView : Grid
     {
         private readonly TextBlock _p1Name;
@@ -177,8 +165,8 @@ namespace BleachVsNarutoMini.UI
         private readonly HealthBar _p2Health = new(true);
         private readonly ChakraBar _p1Chakra = new(false);
         private readonly ChakraBar _p2Chakra = new(true);
-        private readonly GuardBar _p1Guard = new(false); // [Phát thêm] Thanh chống đỡ P1
-        private readonly GuardBar _p2Guard = new(true);  // [Phát thêm] Thanh chống đỡ P2
+        private readonly GuardBar _p1Guard = new(false);
+        private readonly GuardBar _p2Guard = new(true);
         private readonly TextBlock _timeText;
 
         public HudView()
@@ -191,16 +179,16 @@ namespace BleachVsNarutoMini.UI
             ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(110) });
             ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
 
-            // [Phát thêm] Giữ chiều rộng thanh chống đỡ luôn bằng đúng 1/3 thanh Chakra
             _p1Chakra.SizeChanged += (_, e) => _p1Guard.Width = e.NewSize.Width / 3.0;
             _p2Chakra.SizeChanged += (_, e) => _p2Guard.Width = e.NewSize.Width / 3.0;
 
-            // Cụm thanh trạng thái Player 1 (Trái)
+            // Player 1
             _p1Name = new TextBlock
             {
                 Text = "PLAYER 1",
-                Foreground = Brushes.White,
-                FontSize = 15,
+                FontFamily = UiKit.BodyFont,
+                Foreground = new SolidColorBrush(Color.FromRgb(0x64, 0xB5, 0xF6)),
+                FontSize = 14,
                 FontWeight = FontWeights.Bold,
                 Margin = new Thickness(0, 0, 0, 4)
             };
@@ -208,14 +196,15 @@ namespace BleachVsNarutoMini.UI
             p1Panel.Children.Add(_p1Name);
             p1Panel.Children.Add(_p1Health);
             p1Panel.Children.Add(_p1Chakra);
-            p1Panel.Children.Add(_p1Guard); // [Phát thêm] Gắn thanh chống đỡ ngay dưới thanh Chakra của P1
+            p1Panel.Children.Add(_p1Guard);
             SetColumn(p1Panel, 0);
             Children.Add(p1Panel);
 
-            // Đồng hồ & chữ VS ở giữa
+            // Đồng hồ & VS
             _timeText = new TextBlock
             {
                 Text = "60",
+                FontFamily = UiKit.DisplayFont,
                 Foreground = Brushes.White,
                 FontSize = 28,
                 FontWeight = FontWeights.ExtraBold,
@@ -224,27 +213,25 @@ namespace BleachVsNarutoMini.UI
             var vsText = new TextBlock
             {
                 Text = "VS",
-                Foreground = new SolidColorBrush(Color.FromRgb(0xFF, 0xD5, 0x4F)),
+                FontFamily = UiKit.DisplayFont,
+                Foreground = new SolidColorBrush(Color.FromRgb(0xD8, 0x43, 0x15)),
                 FontSize = 14,
                 FontWeight = FontWeights.Bold,
                 HorizontalAlignment = HorizontalAlignment.Center
             };
-            var centerPanel = new StackPanel
-            {
-                VerticalAlignment = VerticalAlignment.Center,
-                HorizontalAlignment = HorizontalAlignment.Center
-            };
+            var centerPanel = new StackPanel { VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Center };
             centerPanel.Children.Add(_timeText);
             centerPanel.Children.Add(vsText);
             SetColumn(centerPanel, 1);
             Children.Add(centerPanel);
 
-            // Cụm thanh trạng thái Player 2 (Phải)
+            // Player 2
             _p2Name = new TextBlock
             {
                 Text = "PLAYER 2",
-                Foreground = Brushes.White,
-                FontSize = 15,
+                FontFamily = UiKit.BodyFont,
+                Foreground = new SolidColorBrush(Color.FromRgb(0xE5, 0x73, 0x73)),
+                FontSize = 14,
                 FontWeight = FontWeights.Bold,
                 HorizontalAlignment = HorizontalAlignment.Right,
                 Margin = new Thickness(0, 0, 0, 4)
@@ -253,7 +240,7 @@ namespace BleachVsNarutoMini.UI
             p2Panel.Children.Add(_p2Name);
             p2Panel.Children.Add(_p2Health);
             p2Panel.Children.Add(_p2Chakra);
-            p2Panel.Children.Add(_p2Guard); // [Phát thêm] Gắn thanh chống đỡ ngay dưới thanh Chakra của P2
+            p2Panel.Children.Add(_p2Guard);
             SetColumn(p2Panel, 2);
             Children.Add(p2Panel);
         }
@@ -276,7 +263,6 @@ namespace BleachVsNarutoMini.UI
             _p2Chakra.SetValue(p2Chakra, maxChakra);
         }
 
-        // [Phát thêm] Chỉ hiện thanh chống đỡ khi nhân vật đang đỡ và bị đánh trúng (tối đa 45)
         public void SetGuard(double p1Guard, double p2Guard, double maxGuard = 45, bool showP1 = false, bool showP2 = false)
         {
             _p1Guard.Visibility = showP1 ? Visibility.Visible : Visibility.Hidden;
@@ -289,18 +275,16 @@ namespace BleachVsNarutoMini.UI
         {
             _timeText.Text = seconds.ToString();
             _timeText.Foreground = seconds <= 10
-                ? new SolidColorBrush(Color.FromRgb(0xFF, 0x52, 0x52))
+                ? new SolidColorBrush(Color.FromRgb(0xC6, 0x28, 0x28))
                 : Brushes.White;
         }
 
-        //Nghĩa thêm, settimeinfinite để tính thời gian vô hạn
         public void SetTimeInfinite()
         {
             _timeText.Text = "∞";
             _timeText.Foreground = Brushes.White;
         }
 
-        // [Phát thêm] Gọi hiệu ứng nháy đỏ và rung thanh Chakra của người chơi tương ứng
         public void WarnLowChakra(int playerIndex)
         {
             if (playerIndex == 1) _p1Chakra.TriggerWarning();

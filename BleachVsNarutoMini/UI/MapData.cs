@@ -37,50 +37,71 @@ namespace BleachVsNarutoMini.UI
         public const double Width = 1024;
         public const double Height = 640;
 
-        public static readonly string[] AllIds = { "Arena1", "Arena2" };
+        // [Sửa] Thêm Arena3 vào danh sách
+        public static readonly string[] AllIds = { "Arena1", "Arena2", "Arena3" };
 
         public static MapData Get(string id)
         {
-            return id == "Arena2" ? CreateArena2() : CreateArena1();
+            return id switch
+            {
+                "Arena2" => CreateArena2(),
+                "Arena3" => CreateArena3(),
+                _ => CreateArena1()
+            };
         }
 
-        // Đấu trường 1: Đấu trường Đá 
+        // Đấu trường 1: Thung lũng Tận Cùng
         private static MapData CreateArena1()
         {
             var map = new MapData
             {
                 Id = "Arena1",
-                Name = "Đấu trường Đá",
+                Name = "Thung lũng Tận Cùng",
                 Background = LoadImageBrush("Assets/Images/map/arena1_bg.png",
                             Frozen(Color.FromRgb(0x2B, 0x2B, 0x3C))),
-                ObstacleFill = Frozen(Color.FromRgb(0x7A, 0x6A, 0x58)),
+                ObstacleFill = Frozen(Color.FromRgb(0x5C, 0x54, 0x49)),
                 ObstacleBorder = Brushes.Black,
                 P1Spawn = new Point(80, 300),
                 P2Spawn = new Point(920, 300)
             };
-
-            AddBorderWalls(map.Obstacles, 20);
             return map;
         }
 
-        //  Đấu trường 2: Đấu trường Băng 
+        // Đấu trường 2: Rừng Chết
         private static MapData CreateArena2()
         {
             var map = new MapData
             {
                 Id = "Arena2",
-                Name = "Đấu trường Băng",
+                Name = "Rừng Chết",
                 Background = LoadImageBrush("Assets/Images/map/arena2_bg.png",
-                            Frozen(Color.FromRgb(0x1B, 0x3A, 0x4B))),
-                ObstacleFill = Frozen(Color.FromRgb(0x8E, 0xCA, 0xE6)),
-                ObstacleBorder = Frozen(Color.FromRgb(0x21, 0x9E, 0xBC)),
+                            Frozen(Color.FromRgb(0x2E, 0x3B, 0x23))),
+                ObstacleFill = Frozen(Color.FromRgb(0x4A, 0x3B, 0x2C)),
+                ObstacleBorder = Brushes.Black,
                 P1Spawn = new Point(80, 300),
                 P2Spawn = new Point(920, 300)
             };
-
-            AddBorderWalls(map.Obstacles, 20);
             return map;
         }
+
+        // [Thêm mới] Đấu trường 3: Học viện Làng Lá
+        private static MapData CreateArena3()
+        {
+            var map = new MapData
+            {
+                Id = "Arena3",
+                Name = "Học viện Làng Lá",
+                Background = LoadImageBrush("Assets/Images/map/arena3_bg.png",
+                            Frozen(Color.FromRgb(0x3E, 0x2F, 0x22))),
+                ObstacleFill = Frozen(Color.FromRgb(0x6D, 0x4C, 0x3D)),
+                ObstacleBorder = Brushes.Black,
+                P1Spawn = new Point(80, 300),
+                P2Spawn = new Point(920, 300)
+            };
+            return map;
+        }
+
+        // ... (giữ nguyên AddBorderWalls, Frozen, LoadImageBrush ở bên dưới)
 
         // 4 bức tường bao quanh sân
         private static void AddBorderWalls(List<Rect> list, double t)

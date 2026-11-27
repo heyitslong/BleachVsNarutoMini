@@ -1,98 +1,110 @@
-using System;
-using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Markup;
+using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Shapes;
-using System.Windows.Threading;
+using System.Windows.Media.Effects;
 
 namespace BleachVsNarutoMini.UI
 {
-    //  TIỆN ÍCH GIAO DIỆN (style nút bấm, nhãn, radio)
-    internal static class UiKit
+    public static class UiKit
     {
-        private const string ButtonStyleXaml = @"
-<Style xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'
-       xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml'
-       TargetType='Button'>
-  <Setter Property='Foreground' Value='White'/>
-  <Setter Property='Background' Value='#3A3A55'/>
-  <Setter Property='FontSize' Value='18'/>
-  <Setter Property='FontWeight' Value='SemiBold'/>
-  <Setter Property='Cursor' Value='Hand'/>
-  <Setter Property='Template'>
-    <Setter.Value>
-      <ControlTemplate TargetType='Button'>
-        <Border x:Name='bd' Background='{TemplateBinding Background}'
-                BorderBrush='Gold' BorderThickness='1' CornerRadius='8'>
-          <ContentPresenter HorizontalAlignment='Center' VerticalAlignment='Center'/>
-        </Border>
-        <ControlTemplate.Triggers>
-          <Trigger Property='IsMouseOver' Value='True'>
-            <Setter TargetName='bd' Property='Background' Value='#5A5A85'/>
-          </Trigger>
-          <Trigger Property='IsPressed' Value='True'>
-            <Setter TargetName='bd' Property='Background' Value='#2A2A40'/>
-          </Trigger>
-        </ControlTemplate.Triggers>
-      </ControlTemplate>
-    </Setter.Value>
-  </Setter>
-</Style>";
+        public static readonly FontFamily DisplayFont = new("Impact, Arial Black, Segoe UI");
+        public static readonly FontFamily BodyFont = new("Bahnschrift, Arial Black, Segoe UI");
 
-        private static Style _buttonStyle;
-
-        public static Style ButtonStyle
+        public static Brush DimBackground() => new RadialGradientBrush
         {
-            get
+            Center = new Point(0.5, 0.45),
+            RadiusX = 0.85,
+            RadiusY = 0.85,
+            GradientStops = new GradientStopCollection
             {
-                if (_buttonStyle == null)
-                    _buttonStyle = (Style)XamlReader.Parse(ButtonStyleXaml);
-                return _buttonStyle;
+                new GradientStop(Color.FromRgb(0x28, 0x16, 0x14), 0.0),
+                new GradientStop(Color.FromRgb(0x0E, 0x0D, 0x10), 1.0)
             }
-        }
+        };
 
-        public static Button MakeButton(string text, RoutedEventHandler onClick, Thickness margin)
+        public static Button MakeButton(string text, RoutedEventHandler onClick, Thickness margin, bool isPrimary = true)
         {
-            var b = new Button
-            {
-                Content = text,
-                Height = 45,
-                Margin = margin,
-                Style = ButtonStyle
-            };
-            b.Click += onClick;
-            return b;
-        }
+            var normalBg = isPrimary
+                ? new LinearGradientBrush(
+                    Color.FromRgb(0x8D, 0x3B, 0x18),
+                    Color.FromRgb(0x4E, 0x1D, 0x0A),
+                    new Point(0, 0), new Point(0, 1))
+                : new LinearGradientBrush(
+                    Color.FromRgb(0x27, 0x24, 0x22),
+                    Color.FromRgb(0x16, 0x14, 0x13),
+                    new Point(0, 0), new Point(0, 1));
 
-        public static TextBlock MakeLabel(string text)
-        {
-            return new TextBlock
+            var hoverBg = isPrimary
+                ? new LinearGradientBrush(
+                    Color.FromRgb(0xB8, 0x4E, 0x1E),
+                    Color.FromRgb(0x6D, 0x29, 0x0E),
+                    new Point(0, 0), new Point(0, 1))
+                : new LinearGradientBrush(
+                    Color.FromRgb(0x3A, 0x35, 0x31),
+                    Color.FromRgb(0x21, 0x1E, 0x1C),
+                    new Point(0, 0), new Point(0, 1));
+
+            var normalBorder = isPrimary
+                ? new SolidColorBrush(Color.FromRgb(0xC8, 0x9B, 0x62))
+                : new SolidColorBrush(Color.FromRgb(0x6E, 0x62, 0x56));
+
+            var label = new TextBlock
             {
                 Text = text,
-                Foreground = Brushes.White,
-                FontSize = 16,
-                Margin = new Thickness(0, 0, 0, 8)
-            };
-        }
-
-        public static RadioButton MakeRadio(string text, string group, bool isChecked, Thickness margin)
-        {
-            return new RadioButton
-            {
-                Content = text,
-                GroupName = group,
-                IsChecked = isChecked,
-                Foreground = Brushes.White,
+                FontFamily = BodyFont,
                 FontSize = 15,
-                Margin = margin
+                FontWeight = FontWeights.Bold,
+                Foreground = new SolidColorBrush(Color.FromRgb(0xEB, 0xDF, 0xCE)),
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center
             };
+
+            var border = new Border
+            {
+                Background = normalBg,
+                BorderBrush = normalBorder,
+                BorderThickness = new Thickness(2),
+                CornerRadius = new CornerRadius(3),
+                Padding = new Thickness(18, 7, 18, 7),
+                Effect = new DropShadowEffect { Color = Colors.Black, BlurRadius = 8, ShadowDepth = 2, Opacity = 0.7 },
+                Child = label
+            };
+
+            var btn = new Button
+            {
+                Content = border,
+                Margin = margin,
+                Background = Brushes.Transparent,
+                BorderThickness = new Thickness(0),
+                Cursor = Cursors.Hand,
+                Focusable = false,
+                Template = BuildCleanButtonTemplate()
+            };
+
+            btn.MouseEnter += (_, _) =>
+            {
+                border.Background = hoverBg;
+                border.BorderBrush = new SolidColorBrush(Color.FromRgb(0xF5, 0xD3, 0x93));
+                label.Foreground = Brushes.White;
+            };
+
+            btn.MouseLeave += (_, _) =>
+            {
+                border.Background = normalBg;
+                border.BorderBrush = normalBorder;
+                label.Foreground = new SolidColorBrush(Color.FromRgb(0xEB, 0xDF, 0xCE));
+            };
+
+            btn.Click += onClick;
+            return btn;
         }
 
-        public static Brush DimBackground()
+        private static ControlTemplate BuildCleanButtonTemplate()
         {
-            return new SolidColorBrush(Color.FromArgb(0xCC, 0, 0, 0));
+            var template = new ControlTemplate(typeof(Button));
+            template.VisualTree = new FrameworkElementFactory(typeof(ContentPresenter));
+            return template;
         }
     }
 }

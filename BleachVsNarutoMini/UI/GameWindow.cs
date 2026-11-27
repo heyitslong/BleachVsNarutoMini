@@ -204,24 +204,41 @@ namespace BleachVsNarutoMini.UI
         public void ShowMenu()
         {
             StopDemo();
-            StopLoop(); // Tắt nhân vật khi ra menu
+            StopLoop();
             Hud.Visibility = Visibility.Collapsed;
             GameCanvas.Children.Clear();
             _projectiles.Clear();
-            _effects.Clear(); // [Phát thêm] Xóa sạch hiệu ứng bụi khi quay về menu
+            _effects.Clear();
 
-            // [SỬA] Menu giờ có 2 cột chọn nhân vật cho P1 và P2
-            // [Phát thêm] Truyền thêm MatchSeconds và nhận lại thời gian người chơi chọn từ menu
-            var menu = new MainMenuView(SelectedP1, SelectedP2, SelectedMap, MatchSeconds);
-            menu.StartClicked += delegate (string p1, string p2, string map, int seconds)
+            var titleView = new TitleView();
+            titleView.PlayClicked += ShowCharacterSelect;
+            _screenHost.Content = titleView;
+        }
+
+        public void ShowCharacterSelect()
+        {
+            var charView = new CharacterSelectView(SelectedP1, SelectedP2);
+            charView.BackClicked += ShowMenu;
+            charView.NextClicked += (p1, p2) =>
             {
                 SelectedP1 = p1;
                 SelectedP2 = p2;
+                ShowMapSelect();
+            };
+            _screenHost.Content = charView;
+        }
+
+        public void ShowMapSelect()
+        {
+            var mapView = new MapSelectView(SelectedMap, MatchSeconds);
+            mapView.BackClicked += ShowCharacterSelect;
+            mapView.StartBattleClicked += (map, seconds) =>
+            {
                 SelectedMap = map;
-                MatchSeconds = seconds; // [Phát thêm] Cập nhật thời gian trận đấu
+                MatchSeconds = seconds;
                 StartGame();
             };
-            _screenHost.Content = menu;
+            _screenHost.Content = mapView;
         }
 
         public void StartGame()
@@ -300,13 +317,13 @@ namespace BleachVsNarutoMini.UI
         // "PLAYER 1 - Naruto"
         private static string PlayerName(int index, string characterId)
         {
-            return "PLAYER " + index + " - " + MainMenuView.DisplayName(characterId);
+            return "PLAYER " + index + " - " + CharacterSelectView.DisplayName(characterId);
         }
 
         // "PLAYER 1 (NARUTO)" 
         private static string PlayerLabel(int index, string characterId)
         {
-            return "PLAYER " + index + " (" + MainMenuView.DisplayName(characterId).ToUpper() + ")";
+            return "PLAYER " + index + " (" + CharacterSelectView.DisplayName(characterId).ToUpper() + ")";
         }
 
         private void AddProjectile(Entities.Projectile proj)
