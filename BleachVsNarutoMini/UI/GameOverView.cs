@@ -47,8 +47,8 @@ namespace BleachVsNarutoMini.UI
 
             // Chữ KẾT THÚC
             var title = MenuKit.MakeOutlinedText("KẾT THÚC", 40,
-                new LinearGradientBrush(Color.FromRgb(0xEF, 0x53, 0x50), Color.FromRgb(0xB7, 0x1C, 0x1C), new Point(0, 0), new Point(0, 1)),
-                Brushes.Black, 3, Color.FromRgb(0x7F, 0x00, 0x00), -8);
+            new LinearGradientBrush(Color.FromRgb(0xEF, 0x53, 0x50), Color.FromRgb(0xB7, 0x1C, 0x1C), new Point(0, 0), new Point(0, 1)),
+            Brushes.Black, -8);
             title.Margin = new Thickness(0, 0, 0, 10);
             content.Children.Add(title);
 

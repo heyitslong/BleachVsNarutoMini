@@ -7,7 +7,7 @@ namespace BleachVsNarutoMini.Entities
         Idle, Run, Jump, Dash, Block,
         Attack, JumpAttack, CrouchAttack,
         Throw, JumpThrow,
-        Special1, Special2, Ultimate,
+        Special1, Special2, Ultimate, Transform,
         Hurt, Knockdown, GetUp, Dead
     }
 
@@ -59,6 +59,7 @@ namespace BleachVsNarutoMini.Entities
     }
     public class FighterConfig
     {
+        public AnimClip Transform { get; init; } = new();
         public double BodyWidthRatio { get; init; } = 0.5;
         public double AttackReach { get; init; } = 25;
         public double Width { get; init; } = 100;
